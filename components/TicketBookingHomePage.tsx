@@ -1,165 +1,208 @@
-// Import necessary libraries
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { TextInput } from 'react-native-gesture-handler';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const BusTicketBookingHomePage = () => {
+const HomeHeader = () => {
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const handleFromChange = (text: React.SetStateAction<string>) => setFrom(text);
+  const handleToChange = (text: React.SetStateAction<string>) => setTo(text);
 
+  interface DateChangeEvent extends NativeSyntheticEvent<NativeSyntheticEventSource> {
+    timestamp: number;
+    nativeEvent: {
+      timestamp: number;
+    };
+  }
+  
+  const onChange = (event: DateChangeEvent | null, selectedDate: Date | undefined) => {
+    const currentDate = selectedDate ?? date; 
+    setShowDatePicker(Platform.OS === 'ios'); 
+    setDate(currentDate); 
+  };
 
+  const showMode = (currentMode: string) => {
+    setShowDatePicker(true);
+  };
+
+  const showDatepicker = () => {
+    showMode('date');
+  };
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}> 
-        <Text style={styles.headerText}>RSSB Ticketing App</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>RSSB Ticket Booking</Text>
+        </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button}>
+            <Image 
+              source={require('../assets/images/bus.png')} 
+              style={styles.buttonImage} 
+            />
+            <Text style={styles.buttonText}>Add new{'\n'}Bus</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Image 
+              source={require('../assets/images/ticket.png')} 
+              style={styles.buttonImage} 
+            />
+            <Text style={styles.buttonText}>Book{'\n'}Tickets</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Image 
+              source={require('../assets/images/search.png')} 
+              style={styles.buttonImage} 
+            />
+            <Text style={styles.buttonText}>Search{'\n'}Buses</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      {/* Categories Section */}
-      <View style={styles.categories}>
-        <TouchableOpacity style={styles.categoryCard}>
-          <Image style={styles.categoryImage} source={require('../assets/images/icon.png')} />
-          <Text style={styles.categoryText}>City A to City B</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryCard}>
-          <Image style={styles.categoryImage} source={require('../assets/images/icon.png')} />
-          <Text style={styles.categoryText}>City C to City D</Text>
+      <View style={styles.contentContainer}>
+        <View style={styles.row}>
+          <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+          <Text style={styles.label}>From</Text>
+          <TextInput
+            style={styles.input}
+            value={from}
+            onChangeText={handleFromChange}
+          />
+        </View>
+        <View style={styles.row}>
+          <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+          <Text style={styles.label}>To</Text>
+          <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
+        </View>
+        <View style={styles.row}>
+          <Image source={require('../assets/images/calendar.png')} style={styles.icon} />
+          <Text style={styles.label}>Date of Journey</Text>
+          <TouchableOpacity onPress={showDatepicker}>
+            <Text style={styles.dateText}>{date.toDateString()}</Text>
+          </TouchableOpacity>
+        </View>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onChange}
+          />
+        )}
+        <TouchableOpacity style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Save Bus</Text>
         </TouchableOpacity>
       </View>
-
-    </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    container: {
+      backgroundColor: 'white',
+      flex: 1, 
+    },
+  headerContainer: {
+    flex: 0.2,
   },
-  header: {
-    backgroundColor: '#6200EE',
-    padding: 20,
-    paddingTop: 30,
+  banner: {
+    backgroundColor: '#3a0ca3', // Example: Golden color for spirituality
+    padding: 10,
     alignItems: 'center',
   },
-  headerText: {
-    color: '#fff',
-    fontSize: 24,
+  bannerText: {
     fontWeight: 'bold',
+    color: '#ffffff',
+    fontSize: 20,
   },
-  searchSection: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  searchButton: {
-    backgroundColor: '#6200EE',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  sectionTitle: {
-    display: "flex",
-    textAlign: "center",
-    marginTop: 30,
-    marginHorizontal: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  categories: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 10,
+    padding: 10,
   },
-  categoryCard: {
+  button: {
+    backgroundColor: '#ffffff', // Green color
+    padding: 15,
     alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    borderRadius: 15,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#000000',
   },
-  categoryImage: {
-    width: 60,
-    height: 60,
-  },
-  categoryText: {
-    marginTop: 5,
-    fontSize: 14,
-  },
-  featuredSection: {
-    marginTop: 10,
-    paddingHorizontal: 20,
-  },
-  featuredCard: {
-    marginBottom: 20,
-  },
-  featuredImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 10,
-  },
-  featuredText: {
-    marginTop: 5,
-    fontSize: 16,
+  buttonText: {
+    color: '#000000',
     fontWeight: 'bold',
   },
-  container1: {
+  buttonImage: {
+    width: 30, 
+    height: 30,
+    marginRight: 5,
+  },
+  //second part
+  contentContainer: {
+    borderRadius: 15,
+    margin: 25,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#000000',
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20,
   },
-  header1: {
-    backgroundColor: '#6200EE',
-    padding: 20,
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
-  },
-  headerText1: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  searchSection1: {
-    marginTop: 20,
-  },
-  inputContainer1: {
     marginBottom: 15,
+    marginTop: 15,
+    marginLeft: 10,
+    marginRight: 10,
   },
-  inputLabel1: {
-    fontSize: 16,
+  icon: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
+  },
+  label: {
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginRight: 10,
   },
-  input1: {
-    backgroundColor: '#fff',
+  input: {
+    flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
+    borderColor: '#ccc',
     padding: 10,
-    fontSize: 16,
+    borderRadius: 5,
   },
-  datePickerButton1: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 10,
-  },
-  datePickerText1: {
-    fontSize: 16,
-    color: '#555',
-  },
-  searchButton1: {
-    backgroundColor: '#E53935',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  searchButtonText1: {
-    color: '#fff',
+  dateText: {
     fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3a0ca3',
+  },
+  saveButton: {
+    marginLeft: 10,
+    marginRight: 10,
+    backgroundColor: '#3a0ca3', // Green color
+    padding: 15,
+    borderRadius: 15,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 20,
+    textAlign: 'center',
     fontWeight: 'bold',
   },
 });
 
-export default BusTicketBookingHomePage;
+// Example of how to add it to your application's homepage
+const HomePage = () => {
+  return (
+    <View style={{ flex: 1 }}>
+      <HomeHeader /> 
+      {/* Rest of your home page content */}
+    </View>
+  );
+};
+
+export default HomePage;
