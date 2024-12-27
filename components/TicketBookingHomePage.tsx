@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent, KeyboardAvoidingView, ScrollView} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const HomeHeader = () => {
   const [from, setFrom] = useState('');
@@ -32,69 +33,80 @@ const HomeHeader = () => {
     showMode('date');
   };
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>RSSB Ticket Booking</Text>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button}>
-            <Image 
-              source={require('../assets/images/bus.png')} 
-              style={styles.buttonImage} 
-            />
-            <Text style={styles.buttonText}>Add new{'\n'}Bus</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Image 
-              source={require('../assets/images/ticket.png')} 
-              style={styles.buttonImage} 
-            />
-            <Text style={styles.buttonText}>Book{'\n'}Tickets</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Image 
-              source={require('../assets/images/search.png')} 
-              style={styles.buttonImage} 
-            />
-            <Text style={styles.buttonText}>Search{'\n'}Buses</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      <View style={styles.contentContainer}>
-        <View style={styles.row}>
-          <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-          <Text style={styles.label}>From</Text>
-          <TextInput
-            style={styles.input}
-            value={from}
-            onChangeText={handleFromChange}
-          />
-        </View>
-        <View style={styles.row}>
-          <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-          <Text style={styles.label}>To</Text>
-          <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
-        </View>
-        <View style={styles.row}>
-          <Image source={require('../assets/images/calendar.png')} style={styles.icon} />
-          <Text style={styles.label}>Date of Journey</Text>
-          <TouchableOpacity onPress={showDatepicker}>
-            <Text style={styles.dateText}>{date.toDateString()}</Text>
-          </TouchableOpacity>
-        </View>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={onChange}
-          />
-        )}
-        <TouchableOpacity style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save Bus</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.container}>
+            {/* Header Section */}
+            <View style={styles.headerContainer}>
+              <View style={styles.banner}>
+                <Text style={styles.bannerText}>RSSB Ticket Booking</Text>
+              </View>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button}>
+                  <Image 
+                    source={require('../assets/images/bus.png')} 
+                    style={styles.buttonImage} 
+                  />
+                  <Text style={styles.buttonText}>Add new{'\n'}Bus</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Image 
+                    source={require('../assets/images/ticket.png')} 
+                    style={styles.buttonImage} 
+                  />
+                  <Text style={styles.buttonText}>Book{'\n'}Tickets</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Image 
+                    source={require('../assets/images/search.png')} 
+                    style={styles.buttonImage} 
+                  />
+                  <Text style={styles.buttonText}>Search{'\n'}Buses</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Content Section */}
+            <View style={styles.contentContainer}>
+              <View style={styles.row}>
+                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Text style={styles.label}>From</Text>
+                <TextInput
+                  style={styles.input}
+                  value={from}
+                  onChangeText={handleFromChange}
+                />
+              </View>
+              <View style={styles.row}>
+                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Text style={styles.label}>To</Text>
+                <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
+              </View>
+              <View style={styles.row}>
+                <Image source={require('../assets/images/calendar.png')} style={styles.icon} />
+                <Text style={styles.label}>Date of Journey</Text>
+                <TouchableOpacity onPress={showDatepicker}>
+                  <Text style={styles.dateText}>{date.toDateString()}</Text>
+                </TouchableOpacity>
+              </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={onChange}
+                />
+              )}
+              <TouchableOpacity style={styles.saveButton}>
+                <Text style={styles.saveButtonText}>Save Bus</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
