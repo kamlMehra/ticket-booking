@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent, KeyboardAvoidingView, ScrollView} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const HomeHeader = () => {
+
+  //Date Time showing Logic 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [busNo, setbusNo] = useState('');
+  const [seatNo, setseatNo] = useState('');
   const [date, setDate] = useState(new Date());
+  const [time, setTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleFromChange = (text: React.SetStateAction<string>) => setFrom(text);
   const handleToChange = (text: React.SetStateAction<string>) => setTo(text);
+  const handleBusNoChange = (text: React.SetStateAction<string>) => setbusNo(text);
+  const handleSeatNoChange = (text: React.SetStateAction<string>) => setseatNo(text);
 
   interface DateChangeEvent extends NativeSyntheticEvent<NativeSyntheticEventSource> {
     timestamp: number;
@@ -25,13 +32,38 @@ const HomeHeader = () => {
     setDate(currentDate); 
   };
 
+  interface TimeChangeEvent extends NativeSyntheticEvent<NativeSyntheticEventSource> {
+    timestamp: number;
+    nativeEvent: {
+      timestamp: number;
+    };
+  }
+  
+  const onChangeTime = (event: TimeChangeEvent | null, selectedTime: Date | undefined) => {
+    const currentHour = selectedTime ?? time;
+    setShowTimePicker(Platform.OS === 'ios');
+    setTime(currentHour);
+  };
+
   const showMode = (currentMode: string) => {
-    setShowDatePicker(true);
+    if (currentMode === 'date') {
+      setShowDatePicker(true);
+    } else {
+      setShowTimePicker(true);
+    }
   };
 
   const showDatepicker = () => {
     showMode('date');
   };
+
+  const showTimepicker = () => {
+    showMode('time');
+  };
+
+  //Date Time End
+
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -82,7 +114,7 @@ const HomeHeader = () => {
               </View>
               <View style={styles.row}>
                 <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-                <Text style={styles.label}>To</Text>
+                <Text style={styles.label}>To    </Text>
                 <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
               </View>
               <View style={styles.row}>
@@ -91,7 +123,14 @@ const HomeHeader = () => {
                 <TouchableOpacity onPress={showDatepicker}>
                   <Text style={styles.dateText}>{date.toDateString()}</Text>
                 </TouchableOpacity>
-              </View>
+                </View>
+                <View style={styles.row}>
+                  <Image source={require('../assets/images/time.png')} style={styles.icon} /> 
+                  <Text style={styles.label}>Time of Journey</Text>
+                  <TouchableOpacity onPress={showTimepicker}>
+                  <Text style={styles.dateText}>{time.toLocaleTimeString()}</Text> 
+                  </TouchableOpacity>
+                </View>
               {showDatePicker && (
                 <DateTimePicker
                   value={date}
@@ -100,6 +139,32 @@ const HomeHeader = () => {
                   onChange={onChange}
                 />
               )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={time}
+                  mode="time"
+                  display="default"
+                  onChange={onChangeTime}
+                />
+              )}
+              <View style={styles.row}>
+                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Text style={styles.label}>Bus No.</Text>
+                <TextInput
+                  style={styles.input}
+                  value={busNo}
+                  onChangeText={handleBusNoChange}
+                />
+              </View>
+              <View style={styles.row}>
+                <Image source={require('../assets/images/seat.png')} style={styles.icon} />
+                <Text style={styles.label}>No. of Seats</Text>
+                <TextInput
+                  style={styles.input}
+                  value={seatNo}
+                  onChangeText={handleSeatNoChange}
+                />
+              </View>
               <TouchableOpacity style={styles.saveButton}>
                 <Text style={styles.saveButtonText}>Save Bus</Text>
               </TouchableOpacity>
