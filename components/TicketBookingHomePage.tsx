@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent, KeyboardAvoidingView, ScrollView} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import colors_app from './colors_app';
 
 const HomeHeader = () => {
 
@@ -13,7 +16,6 @@ const HomeHeader = () => {
   const [time, setTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
   const handleFromChange = (text: React.SetStateAction<string>) => setFrom(text);
   const handleToChange = (text: React.SetStateAction<string>) => setTo(text);
   const handleBusNoChange = (text: React.SetStateAction<string>) => setbusNo(text);
@@ -62,8 +64,6 @@ const HomeHeader = () => {
   };
 
   //Date Time End
-
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -78,24 +78,15 @@ const HomeHeader = () => {
               </View>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/bus.png')} 
-                    style={styles.buttonImage} 
-                  />
+                  <Icon name="bus" size={20} style={styles.icon} />
                   <Text style={styles.buttonText}>Add new{'\n'}Bus</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/ticket.png')} 
-                    style={styles.buttonImage} 
-                  />
+                  <Icon name="ticket" size={20} style={styles.icon} />
                   <Text style={styles.buttonText}>Book{'\n'}Tickets</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/search.png')} 
-                    style={styles.buttonImage} 
-                  />
+                <Ionicons name="search" size={20} style={styles.icon} />
                   <Text style={styles.buttonText}>Search{'\n'}Buses</Text>
                 </TouchableOpacity>
               </View>
@@ -104,7 +95,7 @@ const HomeHeader = () => {
             {/* Content Section */}
             <View style={styles.contentContainer}>
               <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Icon name="bus" size={25} style={styles.icon} />
                 <Text style={styles.label}>From</Text>
                 <TextInput
                   style={styles.input}
@@ -113,19 +104,19 @@ const HomeHeader = () => {
                 />
               </View>
               <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Icon name="bus" size={25} style={styles.icon} />
                 <Text style={styles.label}>To    </Text>
                 <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
               </View>
               <View style={styles.row}>
-                <Image source={require('../assets/images/calendar.png')} style={styles.icon} />
+                <MaterialIcons name="calendar-today" size={25} style={styles.icon} />
                 <Text style={styles.label}>Date of Journey</Text>
                 <TouchableOpacity onPress={showDatepicker}>
                   <Text style={styles.dateText}>{date.toDateString()}</Text>
                 </TouchableOpacity>
                 </View>
                 <View style={styles.row}>
-                  <Image source={require('../assets/images/time.png')} style={styles.icon} /> 
+                  <Ionicons name="time-outline" size={25} style={styles.icon} />
                   <Text style={styles.label}>Time of Journey</Text>
                   <TouchableOpacity onPress={showTimepicker}>
                   <Text style={styles.dateText}>{time.toLocaleTimeString()}</Text> 
@@ -148,7 +139,7 @@ const HomeHeader = () => {
                 />
               )}
               <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
+                <Icon name="bus" size={25} style={styles.icon} />
                 <Text style={styles.label}>Bus No.</Text>
                 <TextInput
                   style={styles.input}
@@ -157,7 +148,7 @@ const HomeHeader = () => {
                 />
               </View>
               <View style={styles.row}>
-                <Image source={require('../assets/images/seat.png')} style={styles.icon} />
+              <FontAwesome5  name="chair" size={25} style={styles.icon} />
                 <Text style={styles.label}>No. of Seats</Text>
                 <TextInput
                   style={styles.input}
@@ -177,21 +168,24 @@ const HomeHeader = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-      backgroundColor: 'white',
-      flex: 1, 
-    },
-  headerContainer: {
+  
+  headerContainer:{
     flex: 0.2,
   },
+  container: {
+      backgroundColor: colors_app.white,
+      flex: 1, 
+    },
   banner: {
-    backgroundColor: '#3a0ca3', // Example: Golden color for spirituality
+    backgroundColor: colors_app.lightModeColor,
     padding: 10,
+    marginTop: 30,
+    marginBottom: 20,
     alignItems: 'center',
   },
   bannerText: {
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors_app.white,
     fontSize: 20,
   },
   buttonContainer: {
@@ -200,24 +194,19 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   button: {
-    backgroundColor: '#ffffff', // Green color
-    padding: 15,
+    backgroundColor: colors_app.white,
+    padding: 13,
     alignItems: 'center',
     display: 'flex',
     flexDirection: 'row',
     borderRadius: 15,
     borderStyle: 'solid',
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: colors_app.black,
   },
   buttonText: {
-    color: '#000000',
+    color: colors_app.black,
     fontWeight: 'bold',
-  },
-  buttonImage: {
-    width: 30, 
-    height: 30,
-    marginRight: 5,
   },
   //second part
   contentContainer: {
@@ -225,21 +214,21 @@ const styles = StyleSheet.create({
     margin: 25,
     borderStyle: 'solid',
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: colors_app.black,
     flex: 1,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    marginTop: 15,
+    marginBottom: 10,
+    marginTop: 10,
     marginLeft: 10,
     marginRight: 10,
   },
   icon: {
-    width: 30,
-    height: 30,
+    marginLeft: 10,
     marginRight: 10,
+    color: colors_app.lightModeColor,
   },
   label: {
     fontWeight: 'bold',
@@ -255,17 +244,17 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#3a0ca3',
+    color: colors_app.lightModeColor,
   },
   saveButton: {
     marginLeft: 10,
     marginRight: 10,
-    backgroundColor: '#3a0ca3', // Green color
+    backgroundColor: colors_app.lightModeColor,
     padding: 15,
     borderRadius: 15,
   },
   saveButtonText: {
-    color: 'white',
+    color: colors_app.white,
     fontSize: 20,
     textAlign: 'center',
     fontWeight: 'bold',
