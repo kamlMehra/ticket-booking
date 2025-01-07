@@ -1,285 +1,320 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, TextInput,Platform, NativeSyntheticEvent, KeyboardAvoidingView, ScrollView} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  Platform,
+  Alert,
+  Dimensions, // Import Dimensions
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const HomeHeader = () => {
+const { height: screenHeight } = Dimensions.get('window'); // Get screen height
 
-  //Date Time showing Logic 
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [busNo, setbusNo] = useState('');
-  const [seatNo, setseatNo] = useState('');
+const RedBusUI = () => {
+  const [isWomenOnly, setIsWomenOnly] = useState(false);
   const [date, setDate] = useState(new Date());
-  const [time, setTime] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [price, setPrice] = useState('');
+  const [busNumber, setBusNumber] = useState('');
+  const [seats, setSeats] = useState([{ seatNumber: '' }]);
+  const [height,setHeight] = useState<any>();
+  const [width,setWidth] = useState<any>();
 
-  const handleFromChange = (text: React.SetStateAction<string>) => setFrom(text);
-  const handleToChange = (text: React.SetStateAction<string>) => setTo(text);
-  const handleBusNoChange = (text: React.SetStateAction<string>) => setbusNo(text);
-  const handleSeatNoChange = (text: React.SetStateAction<string>) => setseatNo(text);
-
-  interface DateChangeEvent extends NativeSyntheticEvent<NativeSyntheticEventSource> {
-    timestamp: number;
-    nativeEvent: {
-      timestamp: number;
-    };
-  }
-  
-  const onChange = (event: DateChangeEvent | null, selectedDate: Date | undefined) => {
-    const currentDate = selectedDate ?? date; 
-    setShowDatePicker(Platform.OS === 'ios'); 
-    setDate(currentDate); 
-  };
-
-  interface TimeChangeEvent extends NativeSyntheticEvent<NativeSyntheticEventSource> {
-    timestamp: number;
-    nativeEvent: {
-      timestamp: number;
-    };
-  }
-  
-  const onChangeTime = (event: TimeChangeEvent | null, selectedTime: Date | undefined) => {
-    const currentHour = selectedTime ?? time;
-    setShowTimePicker(Platform.OS === 'ios');
-    setTime(currentHour);
-  };
-
-  const showMode = (currentMode: string) => {
-    if (currentMode === 'date') {
-      setShowDatePicker(true);
-    } else {
-      setShowTimePicker(true);
+  const onDateChange = (event:any, selectedDate:any) => {
+    if (selectedDate) {
+      setDate(selectedDate);
     }
+    setShowDatePicker(false);
   };
 
-  const showDatepicker = () => {
-    showMode('date');
+  useEffect(()=>{
+    setHeight(Dimensions.get('window').height);
+    setWidth(Dimensions.get('window').width);
+  },[]);
+
+  const onEndDateChange = (event:any, selectedDate:any) => {
+    if (selectedDate) {
+      setEndDate(selectedDate);
+    }
+    setShowEndDatePicker(false);
   };
 
-  const showTimepicker = () => {
-    showMode('time');
+  const formatDate = (date:any) => {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
   };
 
-  //Date Time End
+  const addSeat = () => {
+    setSeats([...seats, { seatNumber: '' }]);
+  };
 
+  const removeSeat = (index:any) => {
+    const updatedSeats = [...seats];
+    updatedSeats.splice(index, 1);
+    setSeats(updatedSeats);
+  };
+
+  const handleSeatChange = (value:any, index:any) => {
+    const updatedSeats = [...seats];
+    updatedSeats[index].seatNumber = value;
+    setSeats(updatedSeats);
+  };
+
+  const handleSubmit = () => {
+    if (!name || !mobile || !price || !busNumber || seats.some((seat) => !seat.seatNumber)) {
+      Alert.alert('Error', 'Please fill all required fields.');
+      return;
+    }
+
+    const bookingData = {
+      name,
+      mobile,
+      price,
+      date,
+      endDate,
+      busNumber,
+      seats: seats.map((seat) => seat.seatNumber),
+    };
+
+    Alert.alert('Booking Successful', JSON.stringify(bookingData, null, 2));
+  };
+
+  // Define the global font color variable
+  const fontColor = '#333';
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.container}>
-            {/* Header Section */}
-            <View style={styles.headerContainer}>
-              <View style={styles.banner}>
-                <Text style={styles.bannerText}>RSSB Ticket Booking</Text>
-              </View>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/bus.png')} 
-                    style={styles.buttonImage} 
-                  />
-                  <Text style={styles.buttonText}>Add new{'\n'}Bus</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/ticket.png')} 
-                    style={styles.buttonImage} 
-                  />
-                  <Text style={styles.buttonText}>Book{'\n'}Tickets</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                  <Image 
-                    source={require('../assets/images/search.png')} 
-                    style={styles.buttonImage} 
-                  />
-                  <Text style={styles.buttonText}>Search{'\n'}Buses</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+    <ScrollView style={[styles.container]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.tab}>
+          <Text style={[styles.tabText, { color: fontColor }]}>Satsang Tickets</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text style={[styles.tabText, { color: fontColor }]}>Sewa Tickets</Text>
+        </TouchableOpacity>
+      </View>
 
-            {/* Content Section */}
-            <View style={styles.contentContainer}>
-              <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-                <Text style={styles.label}>From</Text>
-                <TextInput
-                  style={styles.input}
-                  value={from}
-                  onChangeText={handleFromChange}
-                />
-              </View>
-              <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-                <Text style={styles.label}>To    </Text>
-                <TextInput style={styles.input} value={to} onChangeText={handleToChange} />
-              </View>
-              <View style={styles.row}>
-                <Image source={require('../assets/images/calendar.png')} style={styles.icon} />
-                <Text style={styles.label}>Date of Journey</Text>
-                <TouchableOpacity onPress={showDatepicker}>
-                  <Text style={styles.dateText}>{date.toDateString()}</Text>
-                </TouchableOpacity>
-                </View>
-                <View style={styles.row}>
-                  <Image source={require('../assets/images/time.png')} style={styles.icon} /> 
-                  <Text style={styles.label}>Time of Journey</Text>
-                  <TouchableOpacity onPress={showTimepicker}>
-                  <Text style={styles.dateText}>{time.toLocaleTimeString()}</Text> 
-                  </TouchableOpacity>
-                </View>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="default"
-                  onChange={onChange}
-                />
-              )}
-              {showTimePicker && (
-                <DateTimePicker
-                  value={time}
-                  mode="time"
-                  display="default"
-                  onChange={onChangeTime}
-                />
-              )}
-              <View style={styles.row}>
-                <Image source={require('../assets/images/bus.png')} style={styles.icon} />
-                <Text style={styles.label}>Bus No.</Text>
-                <TextInput
-                  style={styles.input}
-                  value={busNo}
-                  onChangeText={handleBusNoChange}
-                />
-              </View>
-              <View style={styles.row}>
-                <Image source={require('../assets/images/seat.png')} style={styles.icon} />
-                <Text style={styles.label}>No. of Seats</Text>
-                <TextInput
-                  style={styles.input}
-                  value={seatNo}
-                  onChangeText={handleSeatNoChange}
-                />
-              </View>
-              <TouchableOpacity style={styles.saveButton}>
-                <Text style={styles.saveButtonText}>Save Bus</Text>
+      {/* Form */}
+      <View style={styles.card}>
+        <Text style={[styles.label, { color: fontColor }]}>Name</Text>
+        <TextInput
+          placeholder="Enter your name"
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholderTextColor={fontColor}  // Apply placeholder color
+        />
+
+        <Text style={[styles.label, { color: fontColor }]}>Mobile Number</Text>
+        <TextInput
+          placeholder="Enter your mobile number"
+          style={styles.input}
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="phone-pad"
+          placeholderTextColor={fontColor}  // Apply placeholder color
+        />
+
+        <Text style={[styles.label, { color: fontColor }]}>Bus Number</Text>
+        <TextInput
+          placeholder="Enter the bus number"
+          style={styles.input}
+          value={busNumber}
+          onChangeText={setBusNumber}
+          keyboardType="phone-pad"
+          placeholderTextColor={fontColor}  // Apply placeholder color
+        />
+
+        <Text style={[styles.label, { color: fontColor }]}>Price</Text>
+        <TextInput
+          placeholder="Enter the price"
+          style={styles.input}
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="phone-pad"
+          placeholderTextColor={fontColor}  // Apply placeholder color
+        />
+
+        <Text style={[styles.label, { color: fontColor }]}>Start Date of Journey</Text>
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={[styles.datePickerButtonText, { color: fontColor }]}>{formatDate(date)}</Text>
+        </TouchableOpacity>
+        <Modal
+          transparent
+          visible={showDatePicker}
+          animationType="slide"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onDateChange}
+                minimumDate={new Date()}
+              />
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </Modal>
+
+        <Text style={[styles.label, { color: fontColor }]}>End Date of Journey</Text>
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={() => setShowEndDatePicker(true)}
+        >
+          <Text style={[styles.datePickerButtonText, { color: fontColor }]}>{formatDate(endDate)}</Text>
+        </TouchableOpacity>
+        <Modal
+          transparent
+          visible={showEndDatePicker}
+          animationType="slide"
+          onRequestClose={() => setShowEndDatePicker(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <DateTimePicker
+                value={endDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={onEndDateChange}
+                minimumDate={date}
+              />
+              <TouchableOpacity
+                onPress={() => setShowEndDatePicker(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Remaining Form */}
+        <Text style={[styles.label, { color: fontColor }]}>Seat Numbers</Text>
+        {seats.map((seat, index) => (
+          <View key={index} style={styles.seatRow}>
+            <TextInput
+              placeholder={`Seat ${index + 1}`}
+              style={[styles.input, { flex: 1 }]}
+              value={seat.seatNumber}
+              onChangeText={(value) => handleSeatChange(value, index)}
+              placeholderTextColor={fontColor}  // Apply placeholder color
+            />
+            <TouchableOpacity onPress={() => removeSeat(index)}>
+              <Text style={[styles.removeSeat, { color: fontColor }]}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        <TouchableOpacity onPress={addSeat} style={styles.addSeatButton}>
+          <Text style={styles.addSeatText}>Add Seat</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
+          <Text>Submit Booking</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-      backgroundColor: 'white',
-      flex: 1, 
-    },
-  headerContainer: {
-    flex: 0.2,
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+    paddingTop: '12%',
+    height: "auto", // 90% of screen height
   },
-  banner: {
-    backgroundColor: '#3a0ca3', // Example: Golden color for spirituality
-    padding: 10,
-    alignItems: 'center',
-  },
-  bannerText: {
-    fontWeight: 'bold',
-    color: '#ffffff',
-    fontSize: 20,
-  },
-  buttonContainer: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 10,
+    paddingVertical: '2%',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
-  button: {
-    backgroundColor: '#ffffff', // Green color
-    padding: 15,
-    alignItems: 'center',
-    display: 'flex',
-    flexDirection: 'row',
-    borderRadius: 15,
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#000000',
+  tab: { paddingVertical: '3%' },
+  tabText: { fontSize: 15, fontWeight: 'bold' },
+  card: {
+    marginHorizontal: '5%',
+    marginTop: '5%',
+    padding: '5%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 3,
   },
-  buttonText: {
-    color: '#000000',
-    fontWeight: 'bold',
-  },
-  buttonImage: {
-    width: 30, 
-    height: 30,
-    marginRight: 5,
-  },
-  //second part
-  contentContainer: {
-    borderRadius: 15,
-    margin: 25,
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#000000',
-    flex: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    marginTop: 15,
-    marginLeft: 10,
-    marginRight: 10,
-  },
-  icon: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginRight: 10,
-  },
+  label: { fontSize: 15, fontWeight: '500', marginBottom: 5 },
   input: {
-    flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: '3%',
+    marginBottom: '4%',
+    fontSize: 15,
+  },
+  datePickerButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingVertical: '2%',
+    paddingHorizontal: '5%',
+    backgroundColor: '#fff',
+  },
+  datePickerButtonText: { fontSize: 15 },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  closeButton: {
+    marginTop: 20,
     padding: 10,
+    backgroundColor: '#f00',
     borderRadius: 5,
   },
-  dateText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#3a0ca3',
+  closeButtonText: { color: '#fff', fontWeight: 'bold' },
+  seatRow: { flexDirection: 'row', alignItems: 'center', marginBottom: '4%' },
+  removeSeat: { marginLeft: 10 },
+  addSeatButton: {
+    alignItems: 'center',
+    marginVertical: '4%',
+    padding: '3%',
+    backgroundColor: '#eee',
+    borderRadius: 5,
   },
-  saveButton: {
-    marginLeft: 10,
-    marginRight: 10,
-    backgroundColor: '#3a0ca3', // Green color
-    padding: 15,
-    borderRadius: 15,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 20,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
+  addSeatText: { color: '#333', fontSize: 15 },
+  searchButton: {
+    backgroundColor: '#f00',
+    padding: '4%',
+    borderRadius: 5,
+    alignItems: 'center',
+  }
 });
 
-// Example of how to add it to your application's homepage
-const HomePage = () => {
-  return (
-    <View style={{ flex: 1 }}>
-      <HomeHeader /> 
-      {/* Rest of your home page content */}
-    </View>
-  );
-};
-
-export default HomePage;
+export default RedBusUI;
