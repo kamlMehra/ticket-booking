@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -26,8 +26,6 @@ const RedBusUI = () => {
   const [price, setPrice] = useState('');
   const [busNumber, setBusNumber] = useState('');
   const [seats, setSeats] = useState([{ seatNumber: '' }]);
-  const [height,setHeight] = useState<any>();
-  const [width,setWidth] = useState<any>();
 
   const onDateChange = (event:any, selectedDate:any) => {
     if (selectedDate) {
@@ -35,11 +33,6 @@ const RedBusUI = () => {
     }
     setShowDatePicker(false);
   };
-
-  useEffect(()=>{
-    setHeight(Dimensions.get('window').height);
-    setWidth(Dimensions.get('window').width);
-  },[]);
 
   const onEndDateChange = (event:any, selectedDate:any) => {
     if (selectedDate) {
@@ -70,7 +63,7 @@ const RedBusUI = () => {
   };
 
   const handleSubmit = () => {
-    if (!name || !mobile || !price || !busNumber || seats.some((seat) => !seat.seatNumber)) {
+    if (!name || !mobile || !price || !busNumber || seats.some((seat:any) => !seat.seatNumber)) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
@@ -82,7 +75,7 @@ const RedBusUI = () => {
       date,
       endDate,
       busNumber,
-      seats: seats.map((seat) => seat.seatNumber),
+      seats: seats.map((seat:any) => seat.seatNumber),
     };
 
     Alert.alert('Booking Successful', JSON.stringify(bookingData, null, 2));
@@ -92,7 +85,7 @@ const RedBusUI = () => {
   const fontColor = '#333';
 
   return (
-    <ScrollView style={[styles.container]}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.tab}>
@@ -210,13 +203,13 @@ const RedBusUI = () => {
 
         {/* Remaining Form */}
         <Text style={[styles.label, { color: fontColor }]}>Seat Numbers</Text>
-        {seats.map((seat, index) => (
+        {seats.map((seat:any, index:any) => (
           <View key={index} style={styles.seatRow}>
             <TextInput
               placeholder={`Seat ${index + 1}`}
               style={[styles.input, { flex: 1 }]}
               value={seat.seatNumber}
-              onChangeText={(value) => handleSeatChange(value, index)}
+              onChangeText={(value:any) => handleSeatChange(value, index)}
               placeholderTextColor={fontColor}  // Apply placeholder color
             />
             <TouchableOpacity onPress={() => removeSeat(index)}>
@@ -241,7 +234,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f7f7f7',
     paddingTop: '12%',
-    height: "auto", // 90% of screen height
+    height: screenHeight * 0.9, // 90% of screen height
   },
   header: {
     flexDirection: 'row',
