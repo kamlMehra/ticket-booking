@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
-    paddingTop: '12%',
-    height: screenHeight * 0.9, // 90% of screen height
+    paddingTop: '10%',
+    height: screenHeight * 0.8, // 90% of screen height
   },
   header: {
     flexDirection: 'row',
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   removeSeat: { marginLeft: 10 },
   addSeatButton: {
     alignItems: 'center',
-    marginVertical: '4%',
+    marginBottom: '4%',
     padding: '3%',
     backgroundColor: '#eee',
     borderRadius: 5,
@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f00',
     padding: '4%',
     borderRadius: 5,
+    marginBottom: '10%',
     alignItems: 'center',
   }
 });
