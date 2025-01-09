@@ -42,10 +42,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="help"
+        name="addBus"
         options={{
-          title: 'Help',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="help" color={color} />,
+          title: 'Add Bus',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="bus" color={color} />,
         }}
       />
     </Tabs>
