@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -35,20 +36,35 @@ const RedBusUI = () => {
     setSeats(updatedSeats);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !mobile || !busNumber || seats.some((seat:any) => !seat.seatNumber)) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
 
     const bookingData = {
-      name,
-      mobile,
-      busNumber,
-      seats: seats.map((seat:any) => seat.seatNumber),
+      name: name,
+      mobileNumber: mobile,
+      busNumber: busNumber,
+      seatNumber: seats.map((seat:any) => seat.seatNumber),
     };
 
-    Alert.alert('Booking Successful', JSON.stringify(bookingData, null, 2));
+    try {
+      const response = await axios.post('http://192.168.1.6:8000/book', bookingData);
+      console.log({response})
+      if (response.status === 200) {
+        setName('');
+        setMobile('');
+        setBusNumber('');
+        setSeats([{ seatNumber: '' }]);
+        Alert.alert(`Success Bus added successfully!`);
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error({error});
+      Alert.alert(`Failed to add the bus. Please check your network and try again.`);
+    }
   };
 
   // Define the global font color variable
@@ -123,7 +139,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
-    paddingTop: '7%',
+    paddingTop: '13%',
+    fontSize: 4,
     height: screenHeight * 0.8, // 90% of screen height
   },
   header: {

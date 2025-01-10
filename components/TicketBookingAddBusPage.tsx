@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker'; // Import Picker
+import axios from 'axios'; // Import Axios
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -50,26 +50,39 @@ const AddBus = () => {
     return time.toLocaleTimeString(undefined);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!price || !busNumber || !seatNumber || !to || !from || !date || !time || !ticketType) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
-
+  
     const bookingData = {
-      price,
-      date: formatDate(date),
-      time: formatTime(time),
-      busNumber,
-      seatNumber,
-      to,
-      from,
-      ticketType,
+      busNumber: busNumber, // string
+      startTime: formatTime(time), // string
+      fromLocation: from, // string
+      toLocation: to, // string
+      visitPurpose: ticketType, // string (either 'Sewa Ticket' or 'Satsang Ticket')
+      startDate: date.toISOString(), // date in ISO format (string)
+      ticketPrice: parseFloat(price), // number
+      availableSeat: parseInt(seatNumber), // number
+      totalSeat: parseInt(seatNumber), // number
     };
-
-    Alert.alert('Booking Successful', JSON.stringify(bookingData, null, 2));
+  
+    try {
+      const response = await axios.post('http://192.168.1.6:8000/addbus', bookingData);
+      console.log({response})
+      if (response.status === 200) {
+        Alert.alert(`Success Bus added successfully!`);
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error({error});
+      Alert.alert(`Failed to add the bus. Please check your network and try again.`);
+    }
   };
-
+  
+  
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -110,7 +123,7 @@ const AddBus = () => {
           style={styles.input}
           value={price}
           onChangeText={setPrice}
-          keyboardType="numeric"
+          keyboardType="phone-pad"
           placeholderTextColor="#333"
         />
 
@@ -146,19 +159,34 @@ const AddBus = () => {
           placeholder="Enter the total number of Seats"
           style={styles.input}
           value={seatNumber}
+          keyboardType="phone-pad"
           onChangeText={setSeatNumber}
           placeholderTextColor="#333"
         />
 
         <Text style={styles.label}>Ticket Type</Text>
-        <Picker
-          selectedValue={ticketType}
-          style={styles.picker}
-          onValueChange={(itemValue: React.SetStateAction<string>) => setTicketType(itemValue)}
-        >
-          <Picker.Item label="Sewa Ticket" value="Sewa Ticket" />
-          <Picker.Item label="Satsang Ticket" value="Satsang Ticket" />
-        </Picker>
+        <View style={styles.radioGroup}>
+          <TouchableOpacity
+            style={styles.radioContainer}
+            onPress={() => setTicketType('Sewa Ticket')}
+          >
+            <View style={styles.radioCircle}>
+              {ticketType === 'Sewa Ticket' && <View style={styles.radioChecked} />}
+            </View>
+            <Text style={styles.radioLabel}>Sewa Ticket</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.radioContainer}
+            onPress={() => setTicketType('Satsang Ticket')}
+          >
+            <View style={styles.radioCircle}>
+              {ticketType === 'Satsang Ticket' && <View style={styles.radioChecked} />}
+            </View>
+            <Text style={styles.radioLabel}>Satsang Ticket</Text>
+          </TouchableOpacity>
+        </View>
+
 
         <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
           <Text style={styles.searchButtonText}>Add Bus</Text>
@@ -172,7 +200,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
-    paddingTop: '10%',
+    paddingTop: '13%',
     height: screenHeight * 0.8,
   },
   header: {
@@ -232,13 +260,44 @@ const styles = StyleSheet.create({
     padding: '4%',
     borderRadius: 5,
     alignItems: 'center',
-    marginBottom: '10%',
+    marginBottom: '25%',
   },
   searchButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
   },
+  radioGroup: {
+    flexDirection: 'row', // Arrange items in a row
+    justifyContent: 'space-around', // Space items evenly
+    alignItems: 'center', // Align items vertically
+    marginBottom: '4%',
+  },
+  radioContainer: {
+    flexDirection: 'row', // Arrange circle and label in a row
+    alignItems: 'center',
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#f00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5, // Add spacing between the circle and label
+  },
+  radioChecked: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: '#f00',
+  },
+  radioLabel: {
+    fontSize: 15,
+    color: '#333',
+  },
+  
 });
 
 export default AddBus;
