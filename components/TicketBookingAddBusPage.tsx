@@ -6,15 +6,14 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Modal,
-  Platform,
   Alert,
   Dimensions,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import axios from 'axios'; // Import Axios
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import axios from 'axios';
 
 const { height: screenHeight } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const AddBus = () => {
   const [date, setDate] = useState(new Date());
@@ -28,26 +27,17 @@ const AddBus = () => {
   const [from, setFrom] = useState('');
   const [ticketType, setTicketType] = useState('Sewa Ticket');
 
-  const onDateChange = (event: DateTimePickerEvent | undefined, selectedDate: Date | undefined) => {
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
+  const formatDate = (date: Date) => date.toLocaleDateString();
+  const formatTime = (time: Date) => time.toLocaleTimeString();
+
+  const handleDateConfirm = (selectedDate: Date) => {
+    setDate(selectedDate);
     setShowDatePicker(false);
   };
-  
-  const onTimeChange = (event: DateTimePickerEvent | undefined, selectedTime: Date | undefined) => {
-    if (selectedTime) {
-      setTime(selectedTime);
-    }
+
+  const handleTimeConfirm = (selectedTime: Date) => {
+    setTime(selectedTime);
     setShowTimePicker(false);
-  };
-  
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString();
-  };
-  
-  const formatTime = (time: Date) => {
-    return time.toLocaleTimeString();
   };
 
   const handleSubmit = async () => {
@@ -55,153 +45,168 @@ const AddBus = () => {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
-  
+
     const bookingData = {
-      busNumber: busNumber, // string
-      startTime: formatTime(time), // string
-      fromLocation: from, // string
-      toLocation: to, // string
-      visitPurpose: ticketType, // string (either 'Sewa Ticket' or 'Satsang Ticket')
-      startDate: date.toISOString(), // date in ISO format (string)
-      ticketPrice: parseFloat(price), // number
-      availableSeat: parseInt(seatNumber), // number
-      totalSeat: parseInt(seatNumber), // number
+      busNumber: busNumber,
+      startTime: formatTime(time),
+      fromLocation: from,
+      toLocation: to,
+      visitPurpose: ticketType,
+      startDate: date.toISOString(),
+      ticketPrice: parseFloat(price),
+      availableSeat: parseInt(seatNumber),
+      totalSeat: parseInt(seatNumber),
     };
-  
+
     try {
-      const response = await axios.post('http://192.168.1.6:8000/addbus', bookingData);
-      console.log({response})
+      const response = await axios.post('http://192.168.1.9:8000/addbus', bookingData);
       if (response.status === 200) {
-        Alert.alert(`Success Bus added successfully!`);
+        Alert.alert(`Success`, `Bus added successfully!`);
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (error) {
-      console.error({error});
+      console.error({ error });
       Alert.alert(`Failed to add the bus. Please check your network and try again.`);
     }
   };
-  
-  
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Bus Number</Text>
-        <TextInput
-          placeholder="Enter the bus number"
-          style={styles.input}
-          value={busNumber}
-          onChangeText={setBusNumber}
-          placeholderTextColor="#333"
-        />
-
-<Text style={styles.label}>To</Text>
-        <TextInput
-          placeholder="Enter destination"
-          style={styles.input}
-          value={to}
-          onChangeText={setTo}
-          placeholderTextColor="#333"
-        />
-
-        <Text style={styles.label}>From</Text>
-        <TextInput
-          placeholder="Enter departure location"
-          style={styles.input}
-          value={from}
-          onChangeText={setFrom}
-          placeholderTextColor="#333"
-        />
-
-        <Text style={styles.label}>Price</Text>
-        <TextInput
-          placeholder="Enter the price"
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          keyboardType="phone-pad"
-          placeholderTextColor="#333"
-        />
-
-        <Text style={styles.label}>Start Date of Journey</Text>
-        <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.datePickerButtonText}>{formatDate(date)}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
-            onChange={onDateChange}
-            minimumDate={new Date()}
-          />
-        )}
-
-        <Text style={styles.label}>Time of Journey</Text>
-        <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.datePickerButtonText}>{formatTime(time)}</Text>
-        </TouchableOpacity>
-        {showTimePicker && (
-          <DateTimePicker
-            value={time}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
-            onChange={onTimeChange}
-          />
-        )}
-
-        <Text style={styles.label}>Total Seats</Text>
-        <TextInput
-          placeholder="Enter the total number of Seats"
-          style={styles.input}
-          value={seatNumber}
-          keyboardType="phone-pad"
-          onChangeText={setSeatNumber}
-          placeholderTextColor="#333"
-        />
-
-        <Text style={styles.label}>Ticket Type</Text>
-        <View style={styles.radioGroup}>
-          <TouchableOpacity
-            style={styles.radioContainer}
-            onPress={() => setTicketType('Sewa Ticket')}
-          >
-            <View style={styles.radioCircle}>
-              {ticketType === 'Sewa Ticket' && <View style={styles.radioChecked} />}
-            </View>
-            <Text style={styles.radioLabel}>Sewa Ticket</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.radioContainer}
-            onPress={() => setTicketType('Satsang Ticket')}
-          >
-            <View style={styles.radioCircle}>
-              {ticketType === 'Satsang Ticket' && <View style={styles.radioChecked} />}
-            </View>
-            <Text style={styles.radioLabel}>Satsang Ticket</Text>
-          </TouchableOpacity>
+      <View style={styles.subcontainer}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
         </View>
 
+        <View style={styles.card}>
+          <Text style={styles.label}>Bus Number</Text>
+          <TextInput
+            placeholder="Enter the bus number"
+            style={styles.input}
+            value={busNumber}
+            onChangeText={setBusNumber}
+            placeholderTextColor="#333"
+          />
 
-        <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-          <Text style={styles.searchButtonText}>Add Bus</Text>
-        </TouchableOpacity>
+          <Text style={styles.label}>To</Text>
+          <TextInput
+            placeholder="Enter destination"
+            style={styles.input}
+            value={to}
+            onChangeText={setTo}
+            placeholderTextColor="#333"
+          />
+
+          <Text style={styles.label}>From</Text>
+          <TextInput
+            placeholder="Enter departure location"
+            style={styles.input}
+            value={from}
+            onChangeText={setFrom}
+            placeholderTextColor="#333"
+          />
+
+          <Text style={styles.label}>Price</Text>
+          <TextInput
+            placeholder="Enter the price"
+            style={styles.input}
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="phone-pad"
+            placeholderTextColor="#333"
+          />
+
+          <Text style={styles.label}>Start Date of Journey</Text>
+          <TouchableOpacity
+            style={styles.datePickerButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.datePickerButtonText}>{formatDate(date)}</Text>
+          </TouchableOpacity>
+          <DateTimePickerModal
+            isVisible={showDatePicker}
+            mode="date"
+            onConfirm={handleDateConfirm}
+            onCancel={() => setShowDatePicker(false)}
+          />
+
+          <Text style={styles.label}>Time of Journey</Text>
+          <TouchableOpacity
+            style={styles.datePickerButton}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <Text style={styles.datePickerButtonText}>{formatTime(time)}</Text>
+          </TouchableOpacity>
+          <DateTimePickerModal
+            isVisible={showTimePicker}
+            mode="time"
+            onConfirm={handleTimeConfirm}
+            onCancel={() => setShowTimePicker(false)}
+          />
+
+          <Text style={styles.label}>Total Seats</Text>
+          <TextInput
+            placeholder="Enter the total number of Seats"
+            style={styles.input}
+            value={seatNumber}
+            keyboardType="phone-pad"
+            onChangeText={setSeatNumber}
+            placeholderTextColor="#333"
+          />
+
+          <Text style={styles.label}>Ticket Type</Text>
+          <View style={styles.radioGroup}>
+            <TouchableOpacity
+              style={styles.radioContainer}
+              onPress={() => setTicketType('Sewa Ticket')}
+            >
+              <View style={styles.radioCircle}>
+                {ticketType === 'Sewa Ticket' && <View style={styles.radioChecked} />}
+              </View>
+              <Text style={styles.radioLabel}>Sewa Ticket</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.radioContainer}
+              onPress={() => setTicketType('Satsang Ticket')}
+            >
+              <View style={styles.radioCircle}>
+                {ticketType === 'Satsang Ticket' && <View style={styles.radioChecked} />}
+              </View>
+              <Text style={styles.radioLabel}>Satsang Ticket</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
+            <Text style={styles.searchButtonText}>Add Bus</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
 };
 
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
     paddingTop: '13%',
-    height: screenHeight * 0.8,
+    height: '90%',
+  },
+  subcontainer:{
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+    height: '90%',
+    marginBottom: '25%',
+  },
+  modalHeader: {
+    fontSize: width * 0.06,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 10,
+    color: "#007BFF",
   },
   header: {
     backgroundColor: '#f00',
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
     padding: '4%',
     borderRadius: 5,
     alignItems: 'center',
-    marginBottom: '25%',
+    // marginBottom: '25%',
   },
   searchButtonText: {
     color: '#fff',

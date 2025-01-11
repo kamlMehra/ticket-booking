@@ -10,8 +10,10 @@ import {
   Alert,
   Dimensions, // Import Dimensions
 } from 'react-native';
-
+import { SelectList } from 'react-native-dropdown-select-list';
+import { MultipleSelectList } from 'react-native-dropdown-select-list'
 const { height: screenHeight } = Dimensions.get('window'); // Get screen height
+const { width } = Dimensions.get('window');
 
 const RedBusUI = () => {
   const [name, setName] = useState('');
@@ -19,6 +21,15 @@ const RedBusUI = () => {
   const [busNumber, setBusNumber] = useState('');
   const [seats, setSeats] = useState([{ seatNumber: '' }]);
 
+  const data = [
+    { key: '1', value: 'Mobiles'},
+    { key: '2', value: 'Appliances' },
+    { key: '3', value: 'Cameras' },
+    { key: '4', value: 'Computers'},
+    { key: '5', value: 'Vegetables' },
+    { key: '6', value: 'Dairy Products' },
+    { key: '7', value: 'Drinks' },
+  ];
 
   const addSeat = () => {
     setSeats([...seats, { seatNumber: '' }]);
@@ -73,6 +84,7 @@ const RedBusUI = () => {
   return (
     <ScrollView style={styles.container}>
       {/*Header*/}
+      <View style={styles.subcontainer}>
       <View style={styles.header}>
         <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
       </View>
@@ -98,38 +110,40 @@ const RedBusUI = () => {
         />
 
         <Text style={[styles.label, { color: fontColor }]}>Bus Number</Text>
-        <TextInput
-          placeholder="Enter the bus number"
-          style={styles.input}
-          value={busNumber}
-          onChangeText={setBusNumber}
-          keyboardType="phone-pad"
-          placeholderTextColor={fontColor}  // Apply placeholder color
+        <SelectList
+          setSelected={(val:any) => setBusNumber(val)}
+          data={data}
+          save="value"
+          placeholder="Add Bus Number"
+          boxStyles={styles.selectBox}
+          dropdownStyles={styles.dropdown}
+          dropdownTextStyles={styles.dropdownText}
+          search={false} // Disable search if not needed
         />
 
         {/* Remaining Form */}
-        <Text style={[styles.label, { color: fontColor }]}>Seat Numbers</Text>
+        <Text style={[styles.label, { color: fontColor, marginTop: '2.7%' }]}>Seat Numbers</Text>
         {seats.map((seat:any, index:any) => (
           <View key={index} style={styles.seatRow}>
-            <TextInput
-              placeholder={`Seat ${index + 1}`}
-              style={[styles.input, { flex: 1 }]}
-              value={seat.seatNumber}
-              onChangeText={(value:any) => handleSeatChange(value, index)}
-              placeholderTextColor={fontColor}  // Apply placeholder color
+            <MultipleSelectList 
+                setSelected={(val:any) => setSeats([{ seatNumber: val }])} 
+                data={data} 
+                save="value"
+                // onSelect={() => alert(seats)} 
+                label="Categories"
+                placeholder="Add Seat Number"
+                boxStyles={styles.selectBox}
+                dropdownStyles={styles.dropdown}
+                dropdownTextStyles={styles.dropdownText}
+                search={false} // Disable search if not needed
             />
-            <TouchableOpacity onPress={() => removeSeat(index)}>
-              <Text style={[styles.removeSeat, { color: fontColor }]}>Remove</Text>
-            </TouchableOpacity>
           </View>
         ))}
-        <TouchableOpacity onPress={addSeat} style={styles.addSeatButton}>
-          <Text style={styles.addSeatText}>Add Seat</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
           <Text style={styles.submitText}>Submit Booking</Text>
         </TouchableOpacity>
+      </View>
       </View>
     </ScrollView>
   );
@@ -141,7 +155,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f7f7',
     paddingTop: '13%',
     fontSize: 4,
-    height: screenHeight * 0.8, // 90% of screen height
+    height: '90%', // 90% of screen height
+  },
+  subcontainer:{
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+    height: '90%',
+    marginBottom: '25%',
+  },
+  selectBox: {
+    width: width * 0.8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingLeft: '3%',
+  },
+  dropdown: {
+    width: width * 0.8,
+    // height: '38%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+  },
+  dropdownText: {
+    color: '#333',
+    fontSize: 16,
   },
   header: {
     backgroundColor: '#f00',
