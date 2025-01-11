@@ -28,26 +28,26 @@ const AddBus = () => {
   const [from, setFrom] = useState('');
   const [ticketType, setTicketType] = useState('Sewa Ticket');
 
-  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
-    if (date) {
-      setDate(date);
+  const onDateChange = (event: DateTimePickerEvent | undefined, selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setDate(selectedDate);
     }
     setShowDatePicker(false);
   };
-
-  const onTimeChange = (event: DateTimePickerEvent, date?: Date) => {
-    if (date) {
-      setTime(date);
+  
+  const onTimeChange = (event: DateTimePickerEvent | undefined, selectedTime: Date | undefined) => {
+    if (selectedTime) {
+      setTime(selectedTime);
     }
     setShowTimePicker(false);
   };
-
+  
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString(undefined);
+    return date.toLocaleDateString();
   };
-
+  
   const formatTime = (time: Date) => {
-    return time.toLocaleTimeString(undefined);
+    return time.toLocaleTimeString();
   };
 
   const handleSubmit = async () => {
