@@ -187,9 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f00',
     padding: '4%',
     borderRadius: 7,
-    marginBottom: '2%',
-    marginRight: '5%',
-    marginLeft: '5%',
+    marginHorizontal: '5%',
   },
   headerText: {
     color: '#fff',

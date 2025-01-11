@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '500',
-    marginBottom: '3%',
+    marginBottom: 5,
   },
   input: {
     borderWidth: 1,
