@@ -54,12 +54,12 @@ const AddBus = () => {
       visitPurpose: ticketType,
       startDate: date.toISOString(),
       ticketPrice: parseFloat(price),
-      availableSeat: parseInt(seatNumber),
-      totalSeat: parseInt(seatNumber),
+      availableSeat: parseInt(seatNumber)+10,
+      totalSeat: parseInt(seatNumber)+10,
     };
 
     try {
-      const response = await axios.post('http://192.168.1.9:8000/addbus', bookingData);
+      const response = await axios.post('http://192.168.1.8:8000/addbus', bookingData);
       if (response.status === 200) {
         Alert.alert(`Success`, `Bus added successfully!`);
       } else {
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     color: "#007BFF",
   },
   header: {
-    backgroundColor: '#f00',
+    backgroundColor: 'rgba(138,1,2,255)',
     padding: '4%',
     borderRadius: 7,
     marginHorizontal: '5%',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: '4%',
   },
   searchButton: {
-    backgroundColor: '#f00',
+    backgroundColor: 'rgba(138,1,2,255)',
     padding: '4%',
     borderRadius: 5,
     alignItems: 'center',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#f00',
+    borderColor: 'rgba(138,1,2,255)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 5, // Add spacing between the circle and label
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     height: 10,
     width: 10,
     borderRadius: 5,
-    backgroundColor: '#f00',
+    backgroundColor: 'rgba(138,1,2,255)',
   },
   radioLabel: {
     fontSize: 15,

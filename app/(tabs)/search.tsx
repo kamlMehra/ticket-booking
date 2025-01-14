@@ -1,96 +1,203 @@
-import React, { useState } from "react";
+import axios from 'axios';
+import React, { useState } from 'react';
 import {
-  Button,
-  View,
   StyleSheet,
-  Dimensions,
-  Platform,
   Text,
+  View,
+  TextInput,
+  ScrollView,
+  Alert,
+  Dimensions,
   TouchableOpacity,
-} from "react-native";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+} from 'react-native';
 
-const { width, height } = Dimensions.get("window"); // To handle responsive scaling
+const { width } = Dimensions.get('window');
 
-const Example = () => {
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("");
+const RedBusUI = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchtype, setSearchType] = useState('Ticket');
+  const [busData, setBusData] = useState<any[]>([]);
+  const [ticketdata,setTciketData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
+  const handleSearchBus = async (query:any) => {
+    if (!query) {
+      Alert.alert('Error', 'Please enter a search query.');
+      return;
+    }
+    try {
+      const response = await axios.get(`http://192.168.1.8:8000/bus/${query}`);
+      if (response.status === 200) {
+        setBusData(response.data);
+        console.log(response.data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch bus data.');
+      }
+    } catch (error) {
+      console.error({ error });
+      Alert.alert('Error', 'Unable to fetch data. Please check your network connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleSearchTicket = async (query:any) => {
+    if (!query) {
+      Alert.alert('Error', 'Please enter a search query.');
+      return;
+    }
+    try {
+      const response = await axios.get(`http://192.168.1.8:8000/ticket/${query}`);
+      if (response.status === 200) {
+        setTciketData(response.data);
+        console.log(response.data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch Ticket data.');
+      }
+    } catch (error) {
+      console.error({ error });
+      Alert.alert('Error', 'Unable to fetch data. Please check your network connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  const handleConfirm = (date: any) => {
-    const formattedDate = date.toDateString();
-    setSelectedDate(formattedDate);
-    hideDatePicker();
+  const handleSearch = () => {
+    if (!searchQuery) {
+      Alert.alert('Error', 'Please enter a search query.');
+      return;
+    }
+     searchtype == "Bus" ? handleSearchBus(searchQuery) : handleSearchTicket(searchQuery);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>
-        Selected Date: {selectedDate || "None"}
-      </Text>
-      <TouchableOpacity style={styles.button} onPress={showDatePicker}>
-        <Text style={styles.buttonText}>Show Date Picker</Text>
-      </TouchableOpacity>
-      <View style={styles.Datebutton}>
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="time"
-        onConfirm={handleConfirm}
-        onCancel={hideDatePicker}
-        customHeaderIOS={() => (
-          <Text style={styles.modalHeader}>Pick a Date</Text>
-        )}
-      />
+    <ScrollView style={styles.container}>
+      {/* Header */}
+      <View style={styles.subcontainer}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>RSSB Ticket Search</Text>
+        </View>
+        {/* Search Field */}
+        <View style={styles.card}>
+          <View style={styles.radioGroup}>
+                      <TouchableOpacity
+                        style={styles.radioContainer}
+                        onPress={() => setSearchType('Ticket')}
+                      >
+                        <View style={styles.radioCircle}>
+                          {searchtype === 'Ticket' && <View style={styles.radioChecked} />}
+                        </View>
+                        <Text style={styles.radioLabel}>Ticket</Text>
+                      </TouchableOpacity>
+          
+                      <TouchableOpacity
+                        style={styles.radioContainer}
+                        onPress={() => setSearchType('Bus')}
+                      >
+                        <View style={styles.radioCircle}>
+                          {searchtype === 'Bus' && <View style={styles.radioChecked} />}
+                        </View>
+                        <Text style={styles.radioLabel}>Bus</Text>
+                      </TouchableOpacity>
+                    </View>
+          <Text style={styles.label}>Search</Text>
+          <TextInput
+            placeholder="Search here"
+            style={styles.input}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#333"
+          />
+          <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+            <Text style={styles.submitText}>Search</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f7f7f7',
+    paddingTop: '13%',
   },
-  Datebutton: {
-    marginBottom: '40%',
+  searchButton: {
+    backgroundColor: '#f00',
+    padding: '4%',
+    borderRadius: 5,
+    marginTop: '5%',
+    alignItems: 'center',
   },
-  label: {
-    fontSize: width * 0.05, // Responsive font size
-    marginBottom: 20,
-    color: "#333",
-    fontWeight: "600",
-    textAlign: "center",
+  submitText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
-  button: {
-    backgroundColor: "#007BFF",
-    paddingVertical: height * 0.02, // Responsive padding
-    paddingHorizontal: width * 0.2,
+  subcontainer: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+    marginBottom: '25%',
+  },
+  header: {
+    backgroundColor: '#rgba(138,1,2,255)',
+    padding: '4%',
+    borderRadius: 7,
+    marginHorizontal: '5%',
+  },
+  headerText: {
+    color: '#fff',
+    fontSize: 23,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  card: {
+    marginHorizontal: '5%',
+    marginTop: '5%',
+    padding: '5%',
+    backgroundColor: '#fff',
     borderRadius: 10,
-    elevation: 3, // Shadow for better UI
+    elevation: 3,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: width * 0.045,
-    fontWeight: "bold",
-    textAlign: "center",
+  label: { fontSize: 15, fontWeight: '500', marginBottom: 5 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: '3%',
+    marginBottom: '4%',
+    fontSize: 15,
   },
-  modalHeader: {
-    fontSize: width * 0.06,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 10,
-    color: "#007BFF",
+  radioGroup: {
+    flexDirection: 'row', // Arrange items in a row
+    justifyContent: 'space-around', // Space items evenly
+    alignItems: 'center', // Align items vertically
+    marginBottom: '4%',
+  },
+  radioContainer: {
+    flexDirection: 'row', // Arrange circle and label in a row
+    alignItems: 'center',
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(138,1,2,255)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5, // Add spacing between the circle and label
+  },
+  radioChecked: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(138,1,2,255)',
+  },
+  radioLabel: {
+    fontSize: 15,
+    color: '#333',
   },
 });
 
-export default Example;
+export default RedBusUI;

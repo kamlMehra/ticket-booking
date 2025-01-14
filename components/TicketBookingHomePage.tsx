@@ -19,7 +19,7 @@ const RedBusUI = () => {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [busNumber, setBusNumber] = useState('');
-  const [seats, setSeats] = useState([{ seatNumber: '' }]);
+  const [seats, setSeats] = useState([]);
 
   const data = [
     { key: '1', value: 'Mobiles'},
@@ -31,24 +31,9 @@ const RedBusUI = () => {
     { key: '7', value: 'Drinks' },
   ];
 
-  const addSeat = () => {
-    setSeats([...seats, { seatNumber: '' }]);
-  };
-
-  const removeSeat = (index:any) => {
-    const updatedSeats = [...seats];
-    updatedSeats.splice(index, 1);
-    setSeats(updatedSeats);
-  };
-
-  const handleSeatChange = (value:any, index:any) => {
-    const updatedSeats = [...seats];
-    updatedSeats[index].seatNumber = value;
-    setSeats(updatedSeats);
-  };
 
   const handleSubmit = async () => {
-    if (!name || !mobile || !busNumber || seats.some((seat:any) => !seat.seatNumber)) {
+    if (!name || !mobile || !busNumber || seats.length <= 0) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
@@ -57,17 +42,17 @@ const RedBusUI = () => {
       name: name,
       mobileNumber: mobile,
       busNumber: busNumber,
-      seatNumber: seats.map((seat:any) => seat.seatNumber),
+      seatNumber: seats,
     };
 
     try {
-      const response = await axios.post('http://192.168.1.6:8000/book', bookingData);
+      const response = await axios.post('http://192.168.1.8:8000/book', bookingData);
       console.log({response})
       if (response.status === 200) {
         setName('');
         setMobile('');
         setBusNumber('');
-        setSeats([{ seatNumber: '' }]);
+        setSeats([]);
         Alert.alert(`Success Bus added successfully!`);
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -123,10 +108,10 @@ const RedBusUI = () => {
 
         {/* Remaining Form */}
         <Text style={[styles.label, { color: fontColor, marginTop: '2.7%' }]}>Seat Numbers</Text>
-        {seats.map((seat:any, index:any) => (
-          <View key={index} style={styles.seatRow}>
+        
+          <View style={styles.seatRow}>
             <MultipleSelectList 
-                setSelected={(val:any) => setSeats([{ seatNumber: val }])} 
+                setSelected={(val:any) => setSeats(val)} 
                 data={data} 
                 save="value"
                 // onSelect={() => alert(seats)} 
@@ -138,7 +123,6 @@ const RedBusUI = () => {
                 search={false} // Disable search if not needed
             />
           </View>
-        ))}
 
         <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
           <Text style={styles.submitText}>Submit Booking</Text>
@@ -184,7 +168,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: {
-    backgroundColor: '#f00',
+    backgroundColor: 'rgba(138,1,2,255)',
     padding: '4%',
     borderRadius: 7,
     marginHorizontal: '5%',
@@ -225,7 +209,7 @@ const styles = StyleSheet.create({
   },
   addSeatText: { color: '#333', fontSize: 15, fontWeight: 'bold' },
   searchButton: {
-    backgroundColor: '#f00',
+    backgroundColor: 'rgba(138,1,2,255)',
     padding: '4%',
     borderRadius: 5,
     marginBottom: '10%',
