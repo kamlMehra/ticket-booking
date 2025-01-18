@@ -1,5 +1,6 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import { useGlobalSearchParams } from 'expo-router';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,126 +9,154 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Dimensions, // Import Dimensions
+  Dimensions,
 } from 'react-native';
-import { SelectList } from 'react-native-dropdown-select-list';
-import { MultipleSelectList } from 'react-native-dropdown-select-list'
-const { height: screenHeight } = Dimensions.get('window'); // Get screen height
+import CustomSelect from './Utils/CustomSelect';
+
+const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get('window');
 
 const RedBusUI = () => {
-  const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [busNumber, setBusNumber] = useState('');
+  const params = useGlobalSearchParams();
+  const [name, setName] = useState<any>('');
+  const [mobile, setMobile] = useState<any>('');
+  const [busNumber, setBusNumber] = useState<any>('');
   const [seats, setSeats] = useState([]);
+ useEffect(()=>{
+   if(params.seatNumber){
+     const Seats:any = [params.seatNumber];
+     const splitValues = Seats[0]?.split(',');
+     setName(params.name);
+     setMobile(params.mobileNumber);
+     setBusNumber(params.busNumber);
+     setSeats(splitValues);
+    }},[params.name,params.mobileNumber,params.busNumber,params.seatNumber])
 
-  const data = [
-    { key: '1', value: 'Mobiles'},
-    { key: '2', value: 'Appliances' },
-    { key: '3', value: 'Cameras' },
-    { key: '4', value: 'Computers'},
-    { key: '5', value: 'Vegetables' },
-    { key: '6', value: 'Dairy Products' },
-    { key: '7', value: 'Drinks' },
-  ];
+    
+    const Seats:any = [params.seatNumber];
+    const splitValues = Seats[0]?.split(',');
 
+    console.log('params-------------------------------->',params)
+  
+
+  const data = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+  // console.log('params-------------------------------->',params.seatNumber)
+  // console.log('FinalSeats-------------------------------->',splitValues)
+
+  const handleSelectionChange = useCallback((selectedItems: any) => {
+    // Only update if selected items are different from current seats
+    if (JSON.stringify(selectedItems) !== JSON.stringify(seats)) {
+      setSeats(selectedItems);
+      // console.log('Selected Items:', selectedItems);
+    }
+  }, [seats]);
 
   const handleSubmit = async () => {
+    // Validation: Ensure all fields are filled and valid
     if (!name || !mobile || !busNumber || seats.length <= 0) {
       Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
-
+  
+    // Prepare the data to be sent in the request
     const bookingData = {
       name: name,
       mobileNumber: mobile,
       busNumber: busNumber,
-      seatNumber: seats,
+      seatNumber: seats.join(','), // Combine seats into a string
     };
-
+  
     try {
-      const response = await axios.post('http://192.168.1.8:8000/book', bookingData);
-      console.log({response})
-      if (response.status === 200) {
-        setName('');
-        setMobile('');
-        setBusNumber('');
-        setSeats([]);
-        Alert.alert(`Success Bus added successfully!`);
+      // If there's an existing booking ID, perform an update
+      if (params?._id) { // Assuming bookingId is passed as a prop or stored in state
+        const response = await axios.put(`https://rssb-ticket.vercel.app/update/${params?._id}`, bookingData);
+  
+        if (response.status === 200) {
+          // Reset the form if update is successful
+          setName('');
+          setMobile('');
+          setBusNumber('');
+          setSeats([]);
+          Alert.alert('Success', 'Ticket updated successfully!');
+        } else {
+          Alert.alert('Error', 'Something went wrong while updating. Please try again.');
+        }
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        // If no bookingId, proceed with creating a new booking
+        const response = await axios.post('https://rssb-ticket.vercel.app/book', bookingData);
+  
+        if (response.status === 200) {
+          // Reset the form after successful booking
+          setName('');
+          setMobile('');
+          setBusNumber('');
+          setSeats([]);
+          Alert.alert('Success', 'Ticket booked successfully!');
+        } else {
+          Alert.alert('Error', 'Something went wrong. Please try again.');
+        }
       }
     } catch (error) {
-      console.error({error});
-      Alert.alert(`Failed to add the bus. Please check your network and try again.`);
+      Alert.alert('Error', 'Failed to submit the booking. Please check your network and try again.');
     }
   };
+  
 
-  // Define the global font color variable
   const fontColor = '#333';
 
   return (
     <ScrollView style={styles.container}>
-      {/*Header*/}
       <View style={styles.subcontainer}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
-      </View>
-      {/* Form */}
-      <View style={styles.card}>
-        <Text style={[styles.label, { color: fontColor }]}>Name</Text>
-        <TextInput
-          placeholder="Enter your name"
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholderTextColor={fontColor}  // Apply placeholder color
-        />
+        <View style={styles.header}>
+          <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
+        </View>
 
-        <Text style={[styles.label, { color: fontColor }]}>Mobile Number</Text>
-        <TextInput
-          placeholder="Enter your mobile number"
-          style={styles.input}
-          value={mobile}
-          onChangeText={setMobile}
-          keyboardType="phone-pad"
-          placeholderTextColor={fontColor}  // Apply placeholder color
-        />
+        <View style={styles.card}>
+          <Text style={[styles.label, { color: fontColor }]}>Name</Text>
+          <TextInput
+            placeholder="Enter your name"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor={fontColor}
+          />
 
-        <Text style={[styles.label, { color: fontColor }]}>Bus Number</Text>
-        <SelectList
-          setSelected={(val:any) => setBusNumber(val)}
-          data={data}
-          save="value"
-          placeholder="Add Bus Number"
-          boxStyles={styles.selectBox}
-          dropdownStyles={styles.dropdown}
-          dropdownTextStyles={styles.dropdownText}
-          search={false} // Disable search if not needed
-        />
+          <Text style={[styles.label, { color: fontColor }]}>Mobile Number</Text>
+          <TextInput
+            placeholder="Enter your mobile number"
+            style={styles.input}
+            value={mobile}
+            onChangeText={setMobile}
+            keyboardType="phone-pad"
+            placeholderTextColor={fontColor}
+          />
 
-        {/* Remaining Form */}
-        <Text style={[styles.label, { color: fontColor, marginTop: '2.7%' }]}>Seat Numbers</Text>
-        
-          <View style={styles.seatRow}>
-            <MultipleSelectList 
-                setSelected={(val:any) => setSeats(val)} 
-                data={data} 
-                save="value"
-                // onSelect={() => alert(seats)} 
-                label="Categories"
-                placeholder="Add Seat Number"
-                boxStyles={styles.selectBox}
-                dropdownStyles={styles.dropdown}
-                dropdownTextStyles={styles.dropdownText}
-                search={false} // Disable search if not needed
-            />
-          </View>
+          <Text style={[styles.label, { color: fontColor }]}>Bus Number</Text>
+          <CustomSelect
+            options={data}
+            onSelectionChange={(val: any) => setBusNumber(val[0])}
+            multiSelect={false}
+            defaultSelection={busNumber ? [busNumber] : []}
+            style={styles.selectBox}
+            dropdownStyle={styles.dropdown}
+            textStyle={styles.dropdownText}
+          />
 
-        <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-          <Text style={styles.submitText}>Submit Booking</Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={[styles.label, { color: fontColor, marginTop: '2.7%' }]}>Seat Numbers</Text>
+          <CustomSelect
+            options={data}
+            onSelectionChange={handleSelectionChange}
+            multiSelect={true}
+            defaultSelection={seats}
+            style={styles.selectBox}
+            dropdownStyle={styles.dropdown}
+            textStyle={styles.dropdownText}
+          />
+
+          <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
+            <Text style={styles.submitText}>{params.seatNumber ? 'Update Booking' : 'Submit Booking'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -139,9 +168,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7f7f7',
     paddingTop: '13%',
     fontSize: 4,
-    height: '90%', // 90% of screen height
+    height: '90%',
   },
-  subcontainer:{
+  subcontainer: {
     flex: 1,
     backgroundColor: '#f7f7f7',
     height: '90%',
@@ -157,7 +186,6 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     width: width * 0.8,
-    // height: '38%',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
@@ -179,8 +207,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  tab: { paddingVertical: '3%' },
-  tabText: { fontSize: 15, fontWeight: 'bold' },
   card: {
     marginHorizontal: '5%',
     marginTop: '5%',
@@ -198,27 +224,18 @@ const styles = StyleSheet.create({
     marginBottom: '4%',
     fontSize: 15,
   },
-  seatRow: { flexDirection: 'row', alignItems: 'center', marginBottom: '4%' },
-  removeSeat: { marginLeft: 10 },
-  addSeatButton: {
-    alignItems: 'center',
-    marginBottom: '4%',
-    padding: '3%',
-    backgroundColor: '#eee',
-    borderRadius: 5,
-  },
-  addSeatText: { color: '#333', fontSize: 15, fontWeight: 'bold' },
   searchButton: {
     backgroundColor: 'rgba(138,1,2,255)',
+    marginTop: '7%',
     padding: '4%',
     borderRadius: 5,
-    marginBottom: '10%',
+    marginBottom: '2%',
     alignItems: 'center',
   },
   submitText: {
     color: '#fff',
     fontWeight: 'bold',
-  }
+  },
 });
 
 export default RedBusUI;

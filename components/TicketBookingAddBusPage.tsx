@@ -22,10 +22,10 @@ const AddBus = () => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [price, setPrice] = useState('');
   const [busNumber, setBusNumber] = useState('');
-  const [seatNumber, setSeatNumber] = useState('');
+  const [seatNumber, setSeatNumber] = useState<any>('');
   const [to, setTo] = useState('');
   const [from, setFrom] = useState('');
-  const [ticketType, setTicketType] = useState('Sewa Ticket');
+  const [ticketType, setTicketType] = useState('Sewa Bus');
 
   const formatDate = (date: Date) => date.toLocaleDateString();
   const formatTime = (time: Date) => time.toLocaleTimeString();
@@ -59,7 +59,7 @@ const AddBus = () => {
     };
 
     try {
-      const response = await axios.post('http://192.168.1.8:8000/addbus', bookingData);
+      const response = await axios.post('https://rssb-ticket.vercel.app/addbus', bookingData);
       if (response.status === 200) {
         Alert.alert(`Success`, `Bus added successfully!`);
       } else {
@@ -158,22 +158,22 @@ const AddBus = () => {
           <View style={styles.radioGroup}>
             <TouchableOpacity
               style={styles.radioContainer}
-              onPress={() => setTicketType('Sewa Ticket')}
+              onPress={() => setTicketType('Sewa Bus')}
             >
               <View style={styles.radioCircle}>
-                {ticketType === 'Sewa Ticket' && <View style={styles.radioChecked} />}
+                {ticketType === 'Sewa Bus' && <View style={styles.radioChecked} />}
               </View>
-              <Text style={styles.radioLabel}>Sewa Ticket</Text>
+              <Text style={styles.radioLabel}>Sewa Bus</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.radioContainer}
-              onPress={() => setTicketType('Satsang Ticket')}
+              onPress={() => setTicketType('Satsang Bus')}
             >
               <View style={styles.radioCircle}>
-                {ticketType === 'Satsang Ticket' && <View style={styles.radioChecked} />}
+                {ticketType === 'Satsang Bus' && <View style={styles.radioChecked} />}
               </View>
-              <Text style={styles.radioLabel}>Satsang Ticket</Text>
+              <Text style={styles.radioLabel}>Satsang Bus</Text>
             </TouchableOpacity>
           </View>
 

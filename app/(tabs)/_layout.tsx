@@ -47,6 +47,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons size={28} name="bus" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="help"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color }) => <Ionicons size={28} name="ellipsis-horizontal" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
