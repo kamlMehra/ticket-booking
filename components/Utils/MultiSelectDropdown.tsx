@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,34 @@ import {
   Dimensions,
 } from 'react-native';
 
-const CustomDropdown = ({ options, selectedValue, onSelect, placeholder }) => {
+const MultiSelectDropdown = ({ options, selectedValues, onSelect, placeholder }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+
+  useEffect(() => {
+    if (selectedValues && selectedValues.length > 0) {
+      setSelectedItems(selectedValues);
+    } else {
+      setSelectedItems([]); // Clear selected items if selectedValues is empty or null
+    }
+  }, [selectedValues]); // This will trigger every time selectedValues changes
 
   const handleSelect = (item) => {
-    onSelect(item);
-    setIsVisible(false);
+    let updatedSelection;
+    if (selectedItems.includes(item)) {
+      updatedSelection = selectedItems.filter((i) => i !== item); // Remove if already selected
+    } else {
+      updatedSelection = [...selectedItems, item]; // Add if not selected
+    }
+    setSelectedItems(updatedSelection);
+    onSelect(updatedSelection);
+  };
+
+  const renderSelectedText = () => {
+    if (selectedItems.length === 0) {
+      return placeholder || 'Select options';
+    }
+    return selectedItems.join(', ');
   };
 
   return (
@@ -24,9 +46,7 @@ const CustomDropdown = ({ options, selectedValue, onSelect, placeholder }) => {
         style={styles.dropdownTrigger}
         onPress={() => setIsVisible(!isVisible)}
       >
-        <Text style={styles.selectedText}>
-          {selectedValue || placeholder || 'Select an option'}
-        </Text>
+        <Text style={styles.selectedText}>{renderSelectedText()}</Text>
       </TouchableOpacity>
 
       {/* Dropdown Modal */}
@@ -47,10 +67,20 @@ const CustomDropdown = ({ options, selectedValue, onSelect, placeholder }) => {
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.option}
+                  style={[
+                    styles.option,
+                    selectedItems.includes(item) && styles.selectedOption,
+                  ]}
                   onPress={() => handleSelect(item)}
                 >
-                  <Text style={styles.optionText}>{item}</Text>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selectedItems.includes(item) && styles.selectedOptionText,
+                    ]}
+                  >
+                    {item}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
@@ -85,8 +115,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     width: '80%',
-    maxHeight:'60%',
-    minHeight:'40%',
+    maxHeight: height * 0.6, // 60% of screen height
     backgroundColor: '#fff',
     borderRadius: 5,
     padding: 10,
@@ -100,6 +129,12 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#333',
   },
+  selectedOption: {
+    backgroundColor: '#e6f7ff',
+  },
+  selectedOptionText: {
+    color: '#007aff',
+  },
 });
 
-export default CustomDropdown;
+export default MultiSelectDropdown;

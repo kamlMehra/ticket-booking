@@ -15,6 +15,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
+
 export const Routes = {
   Home: '/(tabs)/index',
   Search: '/(tabs)/search',
@@ -27,43 +28,45 @@ const RedBusUI = () => {
   const [busData, setBusData] = useState<any[]>([]);
   const [ticketData, setTicketData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isupdate,setIsUpdate] = useState(false);
+  const [isupdate, setIsUpdate] = useState(false);
 
   const router = useRouter();
 
-
-  // Fetch all buses or tickets when the search type changes
   useEffect(() => {
     fetchAllData();
-  }, [searchType,isupdate]);
+  }, [searchType, isupdate]);
 
-  const formatDateToDDMMYY = (isoDate:any) => {
+  const formatDateToDDMMYY = (isoDate: any) => {
     const date = new Date(isoDate);
-    const day = String(date.getDate()).padStart(2, '0'); // Get day with leading zero
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Get month with leading zero
-    const year = String(date.getFullYear()).slice(-2); // Get last two digits of the year
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
     return `${day}/${month}/${year}`;
   };
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      if (searchType == 'Bus') {
+      if (searchType === 'Bus') {
         const response = await axios.get('https://rssb-ticket.vercel.app/bus');
         if (response.status === 200) {
-          setBusData(response.data);
+          setBusData(response.data.length ? response.data : []);
         } else {
+          setBusData([]);
           Alert.alert('Error', 'Failed to fetch bus data.');
         }
       } else {
         const response = await axios.get('https://rssb-ticket.vercel.app/ticket');
         if (response.status === 200) {
-          setTicketData(response.data);
+          setTicketData(response.data.length ? response.data : []);
         } else {
+          setTicketData([]);
           Alert.alert('Error', 'Failed to fetch ticket data.');
         }
       }
     } catch (error) {
+      setBusData([]);
+      setTicketData([]);
       Alert.alert(`No ${searchType} Found!`);
     } finally {
       setLoading(false);
@@ -80,18 +83,20 @@ const RedBusUI = () => {
     setBusData([]);
     setTicketData([]);
     try {
-      if (searchType == 'Bus') {
+      if (searchType === 'Bus') {
         const response = await axios.get(`https://rssb-ticket.vercel.app/bus/${searchQuery}`);
         if (response.status === 200) {
-          setBusData(response.data);
+          setBusData(response.data.length ? response.data : []);
         } else {
+          setBusData([]);
           Alert.alert('Error', 'Failed to fetch bus data.');
         }
       } else {
         const response = await axios.get(`https://rssb-ticket.vercel.app/ticket/${searchQuery}`);
         if (response.status === 200) {
-          setTicketData(response.data);
+          setTicketData(response.data.length ? response.data : []);
         } else {
+          setTicketData([]);
           Alert.alert('Error', 'Failed to fetch ticket data.');
         }
       }
@@ -103,7 +108,7 @@ const RedBusUI = () => {
     }
   };
 
-  const handleEditTicket = (type:any, ticket: any) => {
+  const handleEditTicket = (type: any, ticket: any) => {
     try {
       router.push({
         pathname: '/(tabs)',
@@ -115,25 +120,36 @@ const RedBusUI = () => {
           seatNumber: ticket.seatNumber,
         },
       });
-      
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Unable to edit. Please check your network connection.');
     }
   };
 
-  const handleEditBus = (type:any, bus: any) => {
+  const handleEditBus = (type: any, bus: any) => {
     try {
-      
+      router.push({
+        pathname: '/(tabs)/addBus',
+        params: {
+          _id: bus._id,
+          busNumber: bus.busNumber,
+          totalSeat: bus.totalSeat,
+          availableSeat: bus.availableSeat,
+          ticketPrice: bus.ticketPrice,
+          startDate: bus.startDate,
+          startTime: bus.startTime,
+          fromLocation: bus.fromLocation,
+          toLocation: bus.toLocation,
+          visitPurpose: bus.visitPurpose,
+        },
+      });
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Unable to edit. Please check your network connection.');
     }
   };
-  
-  
 
-  const handleDelete = async (type: string, id: string) => {
+  const handleDelete = async (type: string, id: string, busname:string) => {
     Alert.alert('Delete', `Are you sure you want to delete this ${type}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -145,25 +161,50 @@ const RedBusUI = () => {
                 ? `https://rssb-ticket.vercel.app/deletebus/${id}`
                 : `https://rssb-ticket.vercel.app/cancel/${id}`;
             const response = await axios.delete(endpoint);
+  
             if (response.status === 200) {
-              Alert.alert('Success', `${type} deleted successfully.`);
               if (type === 'Bus') {
-                setBusData(busData.filter((bus) => bus.id !== id));
+                // Attempt to delete all tickets associated with the bus
+                try {
+                  const ticketResponse = await axios.delete(
+                    `https://rssb-ticket.vercel.app/tickets/${busname}`
+                  );
+                  if (ticketResponse.status === 200) {
+                    Alert.alert(
+                      'Success',
+                      `Bus and its associated tickets were deleted successfully.`
+                    );
+                  } else {
+                    Alert.alert(
+                      'Warning',
+                      `Bus was deleted, but associated tickets could not be deleted.`
+                    );
+                  }
+                } catch (ticketError) {
+                  console.error('Error deleting tickets:', ticketError);
+                  Alert.alert(
+                    'Warning',
+                    `Bus was deleted, but there was an error deleting associated tickets.`
+                  );
+                }
               } else {
-                setTicketData(ticketData.filter((ticket) => ticket.id !== id));
+                Alert.alert('Success', `${type} deleted successfully.`);
               }
-              setIsUpdate(!isupdate);
+  
+              // Refresh data
+              fetchAllData();
             } else {
               Alert.alert('Error', `Failed to delete ${type}.`);
             }
           } catch (error) {
-            console.error(error);
+            console.error('Error deleting:', error);
             Alert.alert('Error', 'Unable to delete. Please check your network connection.');
           }
         },
       },
     ]);
   };
+  
 
   return (
     <ScrollView style={styles.container}>
@@ -174,24 +215,16 @@ const RedBusUI = () => {
 
         <View style={styles.card}>
           <View style={styles.radioGroup}>
-            <TouchableOpacity
-              style={styles.radioContainer}
-              onPress={() => setSearchType("Ticket")}
-            >
+            <TouchableOpacity style={styles.radioContainer} onPress={() => setSearchType('Ticket')}>
               <View style={styles.radioCircle}>
-                {searchType === "Ticket" && (
-                  <View style={styles.radioChecked} />
-                )}
+                {searchType === 'Ticket' && <View style={styles.radioChecked} />}
               </View>
               <Text style={styles.radioLabel}>Ticket</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.radioContainer}
-              onPress={() => setSearchType("Bus")}
-            >
+            <TouchableOpacity style={styles.radioContainer} onPress={() => setSearchType('Bus')}>
               <View style={styles.radioCircle}>
-                {searchType === "Bus" && <View style={styles.radioChecked} />}
+                {searchType === 'Bus' && <View style={styles.radioChecked} />}
               </View>
               <Text style={styles.radioLabel}>Bus</Text>
             </TouchableOpacity>
@@ -210,83 +243,69 @@ const RedBusUI = () => {
           </TouchableOpacity>
         </View>
 
-        {loading && (
-          <ActivityIndicator size="large" color="rgba(138,1,2,255)" />
-        )}
+        {loading && <ActivityIndicator size="large" color="rgba(138,1,2,255)" />}
 
-        { searchType == 'Bus' ?
-        busData.map((bus) => (
-          <View key={bus._id} style={styles.resultCard}>
-            <Text style={styles.resultTitle}>Bus Details</Text>
-            <Text style={styles.resultText}>Bus Number: {bus.busNumber}</Text>
-            <Text style={styles.resultText}>Total Seats: {bus.totalSeat}</Text>
-            <Text style={styles.resultText}>
-              Available Seats: {bus.availableSeat}
-            </Text>
-            <Text style={styles.resultText}>
-              Ticket Price: ₹{bus.ticketPrice}
-            </Text>
-            <Text style={styles.resultText}>
-              Start Date:{" "}
-              {formatDateToDDMMYY(bus.startDate)}
-            </Text>
-            <Text style={styles.resultText}>Start Time: {bus.startTime}</Text>
-            <Text style={styles.resultText}>From: {bus.fromLocation}</Text>
-            <Text style={styles.resultText}>To: {bus.toLocation}</Text>
-            <Text style={styles.resultText}>Purpose: {bus.visitPurpose}</Text>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => handleEditBus("Bus", bus)}
-              >
-                <Icon name="edit" size={25} color="#4caf50" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => handleDelete("Bus", bus._id)}
-              >
-                <Icon name="delete" size={25} color="#f44336" />
-              </TouchableOpacity>
+        {searchType === 'Bus' &&
+          busData.map((bus) => (
+            <View key={bus._id} style={styles.resultCard}>
+              <Text style={styles.resultTitle}>Bus Details</Text>
+              <Text style={styles.resultText}>Bus Number: {bus.busNumber}</Text>
+              <Text style={styles.resultText}>Total Seats: {bus.totalSeat}</Text>
+              <Text style={styles.resultText}>Available Seats: {bus.availableSeat}</Text>
+              <Text style={styles.resultText}>Ticket Price: ₹{bus.ticketPrice}</Text>
+              <Text style={styles.resultText}>
+                Start Date: {formatDateToDDMMYY(bus.startDate)}
+              </Text>
+              <Text style={styles.resultText}>Start Time: {bus.startTime}</Text>
+              <Text style={styles.resultText}>From: {bus.fromLocation}</Text>
+              <Text style={styles.resultText}>To: {bus.toLocation}</Text>
+              <Text style={styles.resultText}>Purpose: {bus.visitPurpose}</Text>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity style={styles.iconButton} onPress={() => handleEditBus('Bus', bus)}>
+                  <Icon name="edit" size={25} color="#4caf50" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => handleDelete('Bus', bus._id, bus.busNumber)}
+                >
+                  <Icon name="delete" size={25} color="#f44336" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )) : null}
+          ))}
 
-        { searchType == 'Ticket' ?
-        ticketData.map((ticket) => (
-          <View key={ticket._id} style={styles.resultCard}>
-            <Text style={styles.resultTitle}>Ticket Details</Text>
-            <Text style={styles.resultText}>Passenger Name: {ticket.name}</Text>
-            <Text style={styles.resultText}>Mobile Number: {ticket.mobileNumber}</Text>
-            <Text style={styles.resultText}>Bus Number: {ticket.busNumber}</Text>
-            <Text style={styles.resultText}>
-              Seat Numbers: {ticket.seatNumber.join(", ")}
-            </Text>
-            <View style={styles.actionButtons}>
-              {/* Edit Button */}
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => handleEditTicket("Ticket", ticket)} // Pass the ticket data here
-              >
-                <Icon name="edit" size={25} color="#4caf50" />
-              </TouchableOpacity>
-        
-              {/* Delete Button */}
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => handleDelete("Ticket", ticket._id)} // Pass ticket ID for deletion
-              >
-                <Icon name="delete" size={25} color="#f44336" />
-              </TouchableOpacity>
+        {searchType === 'Ticket' &&
+          ticketData.map((ticket) => (
+            <View key={ticket._id} style={styles.resultCard}>
+              <Text style={styles.resultTitle}>Ticket Details</Text>
+              <Text style={styles.resultText}>Passenger Name: {ticket.name}</Text>
+              <Text style={styles.resultText}>Mobile Number: {ticket.mobileNumber}</Text>
+              <Text style={styles.resultText}>Bus Number: {ticket.busNumber}</Text>
+              <Text style={styles.resultText}>
+                Seat Numbers: {ticket.seatNumber.join(', ')}
+              </Text>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => handleEditTicket('Ticket', ticket)}
+                >
+                  <Icon name="edit" size={25} color="#4caf50" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => handleDelete('Ticket', ticket._id, ticket.busNumber)}
+                >
+                  <Icon name="delete" size={25} color="#f44336" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )) : null}
+          ))}
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  // Styles remain unchanged
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
@@ -390,11 +409,11 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: '3%',
   },
   resultText: {
     fontSize: 15,
-    marginBottom: 5,
+    color: '#555',
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,22 +11,77 @@ import {
 } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import axios from 'axios';
+import { useGlobalSearchParams } from 'expo-router';
 
-const { height: screenHeight } = Dimensions.get('window');
 const { width } = Dimensions.get("window");
 
-const AddBus = () => {
-  const [date, setDate] = useState(new Date());
-  const [time, setTime] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [price, setPrice] = useState('');
-  const [busNumber, setBusNumber] = useState('');
+const AddBus = ({ busData }: { busData?: any }) => {
+  const params = useGlobalSearchParams();
+  const [date, setDate] = useState<any>(new Date());
+  const [time, setTime] = useState<any>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<any>(false);
+  const [showTimePicker, setShowTimePicker] = useState<any>(false);
+  const [price, setPrice] = useState<any>('');
+  const [busNumber, setBusNumber] = useState<any>('');
   const [seatNumber, setSeatNumber] = useState<any>('');
-  const [to, setTo] = useState('');
-  const [from, setFrom] = useState('');
-  const [ticketType, setTicketType] = useState('Sewa Bus');
+  const [to, setTo] = useState<any>('');
+  const [from, setFrom] = useState<any>('');
+  const [ticketType, setTicketType] = useState<any>('Sewa Bus');
 
+  // Prefill the fields when busData is provided
+  // useEffect(() => {
+  //   if (params.busNumber) {
+  //     setBusNumber(params.busNumber);
+  //     setPrice(params.ticketPrice);
+  //     setSeatNumber(params.totalSeat);
+  //     setTo(params.toLocation);
+  //     setFrom(params.fromLocation);
+  //     setTicketType(params.visitPurpose);
+  //     setDate(new Date(params.startDate as string));
+  //     setTime(new Date(params.startTime as string));
+  //   }
+  // }, [params.busNumber, params.ticketPrice, params.totalSeat, params.toLocation, params.fromLocation, params.visitPurpose, params.startDate, params.startTime]);
+
+  useEffect(() => {
+    if (params.busNumber) {
+      setBusNumber(params.busNumber);
+      setPrice(params.ticketPrice);
+      setSeatNumber(params.totalSeat);
+      setTo(params.toLocation);
+      setFrom(params.fromLocation);
+      setTicketType(params.visitPurpose);
+      setDate(new Date(params.startDate as string));
+  
+      // Parse params.startTime and set it to the time state
+      if (params.startTime) {
+        let StartTime:any = [params.startTime];
+        console.log({StartTime});
+        const [time, modifier] = StartTime[0]?.split(" ");
+        let [hours, minutes, seconds] = time.split(":").map(Number);
+        if (modifier === "pm" && hours < 12) hours += 12;
+        if (modifier === "am" && hours === 12) hours = 0;
+  
+        const date = new Date();
+        date.setHours(hours, minutes, seconds || 0);
+        setTime(date);
+      }
+    }
+  }, [
+    params.busNumber,
+    params.ticketPrice,
+    params.totalSeat,
+    params.toLocation,
+    params.fromLocation,
+    params.visitPurpose,
+    params.startDate,
+    params.startTime,
+  ]);
+  
+  
+  
+  
+
+  
   const formatDate = (date: Date) => date.toLocaleDateString();
   const formatTime = (time: Date) => time.toLocaleTimeString();
 
@@ -47,27 +102,38 @@ const AddBus = () => {
     }
 
     const bookingData = {
-      busNumber: busNumber,
+      busNumber,
       startTime: formatTime(time),
       fromLocation: from,
       toLocation: to,
       visitPurpose: ticketType,
       startDate: date.toISOString(),
       ticketPrice: parseFloat(price),
-      availableSeat: parseInt(seatNumber)+10,
-      totalSeat: parseInt(seatNumber)+10,
+      availableSeat: parseInt(seatNumber),
+      totalSeat: parseInt(seatNumber),
     };
 
     try {
-      const response = await axios.post('https://rssb-ticket.vercel.app/addbus', bookingData);
-      if (response.status === 200) {
-        Alert.alert(`Success`, `Bus added successfully!`);
+      if (busData) {
+        // Update request
+        const response = await axios.put(`https://rssb-ticket.vercel.app/updatebus/${busData.id}`, bookingData);
+        if (response.status === 200) {
+          Alert.alert('Success', 'Bus updated successfully!');
+        } else {
+          Alert.alert('Error', 'Something went wrong. Please try again.');
+        }
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        // Add request
+        const response = await axios.post('https://rssb-ticket.vercel.app/addbus', bookingData);
+        if (response.status === 200) {
+          Alert.alert('Success', 'Bus added successfully!');
+        } else {
+          Alert.alert('Error', 'Something went wrong. Please try again.');
+        }
       }
     } catch (error) {
       console.error({ error });
-      Alert.alert(`Failed to add the bus. Please check your network and try again.`);
+      Alert.alert('Error', 'Failed to add or update the bus. Please try again.');
     }
   };
 
@@ -178,14 +244,13 @@ const AddBus = () => {
           </View>
 
           <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-            <Text style={styles.searchButtonText}>Add Bus</Text>
+            <Text style={styles.searchButtonText}>{busData ? 'Update Bus' : 'Add Bus'}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
 };
-
 
 const styles = StyleSheet.create({
 
