@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router'; // Import useFocusEffect
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,16 @@ const RedBusUI = () => {
   const [isupdate, setIsUpdate] = useState(false);
 
   const router = useRouter();
+
+  // Reset state when the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      setSearchQuery('');
+      setBusData([]);
+      setTicketData([]);
+      setIsUpdate((prev) => !prev); // Trigger a refresh
+    }, [])
+  );
 
   useEffect(() => {
     fetchAllData();
@@ -109,100 +120,140 @@ const RedBusUI = () => {
   };
 
   const handleEditTicket = (type: any, ticket: any) => {
-    try {
-      router.push({
-        pathname: '/(tabs)',
-        params: {
-          _id: ticket._id,
-          name: ticket.name,
-          mobileNumber: ticket.mobileNumber,
-          busNumber: ticket.busNumber,
-          seatNumber: ticket.seatNumber,
+    Alert.alert(
+      "Confirm Edit",
+      "Are you sure you want to edit this ticket?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Proceed", 
+          onPress: () => {
+            try {
+              AsyncStorage.removeItem("Id");
+              router.replace({
+                pathname: "/(tabs)",
+                params: {
+                  _id: ticket._id,
+                  name: ticket.name,
+                  mobileNumber: ticket.mobileNumber,
+                  busNumber: ticket.busNumber,
+                  seatNumber: ticket.seatNumber,
+                },
+              });
+            } catch (error) {
+              console.error(error);
+              Alert.alert("Error", "Unable to edit. Please check your network connection.");
+            }
+          },
         },
-      });
+      ]
+    );
+  };
+
+  const clearStorage = async () => {
+    try {
+      await AsyncStorage.clear();
+      console.log("Storage cleared!");
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Unable to edit. Please check your network connection.');
+      console.error("Error clearing storage:", error);
     }
   };
+  
 
   const handleEditBus = (type: any, bus: any) => {
-    try {
-      router.push({
-        pathname: '/(tabs)/addBus',
-        params: {
-          _id: bus._id,
-          busNumber: bus.busNumber,
-          totalSeat: bus.totalSeat,
-          availableSeat: bus.availableSeat,
-          ticketPrice: bus.ticketPrice,
-          startDate: bus.startDate,
-          startTime: bus.startTime,
-          fromLocation: bus.fromLocation,
-          toLocation: bus.toLocation,
-          visitPurpose: bus.visitPurpose,
+    Alert.alert(
+      "Confirm Edit",
+      "Are you sure you want to edit this bus?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Proceed", 
+          onPress: () => {
+            try {
+              clearStorage();
+              router.push({
+                pathname: "/(tabs)/addBus",
+                params: {
+                  _id: bus._id,
+                  busNumber: bus.busNumber,
+                  totalSeat: bus.totalSeat,
+                  availableSeat: bus.availableSeat,
+                  ticketPrice: bus.ticketPrice,
+                  startDate: bus.startDate,
+                  startTime: bus.startTime,
+                  fromLocation: bus.fromLocation,
+                  toLocation: bus.toLocation,
+                  visitPurpose: bus.visitPurpose,
+                },
+              });
+            } catch (error) {
+              console.error(error);
+              Alert.alert("Error", "Unable to edit. Please check your network connection.");
+            }
+          },
         },
-      });
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Unable to edit. Please check your network connection.');
-    }
+      ]
+    );
   };
-
-  const handleDelete = async (type: string, id: string, busname:string) => {
-    Alert.alert('Delete', `Are you sure you want to delete this ${type}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Yes',
-        onPress: async () => {
-          try {
-            const endpoint =
-              type === 'Bus'
-                ? `https://rssb-ticket.vercel.app/deletebus/${id}`
-                : `https://rssb-ticket.vercel.app/cancel/${id}`;
-            const response = await axios.delete(endpoint);
   
-            if (response.status === 200) {
-              if (type === 'Bus') {
-                // Attempt to delete all tickets associated with the bus
-                try {
-                  const ticketResponse = await axios.delete(
-                    `https://rssb-ticket.vercel.app/tickets/${busname}`
-                  );
-                  if (ticketResponse.status === 200) {
-                    Alert.alert(
-                      'Success',
-                      `Bus and its associated tickets were deleted successfully.`
+
+  const handleDelete = async (type: string, id: string, busname: string) => {
+    Alert.alert(
+      "Delete Confirmation",
+      `Are you sure you want to delete this ${type}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Proceed",
+          onPress: async () => {
+            try {
+              const endpoint =
+                type === "Bus"
+                  ? `https://rssb-ticket.vercel.app/deletebus/${id}`
+                  : `https://rssb-ticket.vercel.app/cancel/${id}`;
+              const response = await axios.delete(endpoint);
+  
+              if (response.status === 200) {
+                if (type === "Bus") {
+                  try {
+                    const ticketResponse = await axios.delete(
+                      `https://rssb-ticket.vercel.app/tickets/${busname}`
                     );
-                  } else {
+                    if (ticketResponse.status === 200) {
+                      Alert.alert(
+                        "Success",
+                        `Bus and its associated tickets were deleted successfully.`
+                      );
+                    } else {
+                      Alert.alert(
+                        "Warning",
+                        `Bus was deleted, but associated tickets could not be deleted.`
+                      );
+                    }
+                  } catch (ticketError) {
+                    console.error("Error deleting tickets:", ticketError);
                     Alert.alert(
-                      'Warning',
-                      `Bus was deleted, but associated tickets could not be deleted.`
+                      "Warning",
+                      `Bus was deleted, but there was an error deleting associated tickets.`
                     );
                   }
-                } catch (ticketError) {
-                  console.error('Error deleting tickets:', ticketError);
-                  Alert.alert(
-                    'Warning',
-                    `Bus was deleted, but there was an error deleting associated tickets.`
-                  );
+                } else {
+                  Alert.alert("Success", `${type} deleted successfully.`);
                 }
-              } else {
-                Alert.alert('Success', `${type} deleted successfully.`);
-              }
   
-              // Refresh data
-              fetchAllData();
-            } else {
-              Alert.alert('Error', `Failed to delete ${type}.`);
+                // Refresh data
+                fetchAllData();
+              } else {
+                Alert.alert("Error", `Failed to delete ${type}.`);
+              }
+            } catch (error) {
+              console.error("Error deleting:", error);
+              Alert.alert("Error", "Unable to delete. Please check your network connection.");
             }
-          } catch (error) {
-            console.error('Error deleting:', error);
-            Alert.alert('Error', 'Unable to delete. Please check your network connection.');
-          }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
   
 

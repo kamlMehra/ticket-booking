@@ -1,6 +1,6 @@
 import axios from "axios";
-import { useGlobalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useGlobalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,43 +9,30 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Dimensions,
+  RefreshControl,
 } from "react-native";
-import CustomSelect from "./Utils/CustomSelect";
 import CustomDropdown from "./Utils/CustomSelect";
 import MultiSelectDropdown from "./Utils/MultiSelectDropdown";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { height: screenHeight } = Dimensions.get("window");
-const { width } = Dimensions.get("window");
+// GLOBAL VARIABLE
+let issubmit = false;
 
 const RedBusUI = () => {
-
-  const params = useGlobalSearchParams();
+  const params:any = useGlobalSearchParams();
+  const router = useRouter();
   const [name, setName] = useState<any>("");
   const [mobile, setMobile] = useState<any>("");
   const [busNumber, setBusNumber] = useState<any>("");
-  const [isValid, setIsValid] = useState(true);
-  const [busData, setBusData] = useState<any[]>([]);
+  const [isValid, setIsValid] = useState<any>(true);
+  const [busData, setBusData] = useState<any>([]);
   const [seats, setSeats] = useState<any>([]);
-  const [busDetails, setBusDetails] = useState<any>(null); // For storing bus details
-  const [seatOptions, setSeatOptions] = useState([]); // For storing seat options dynamically
+  const [seatOptions, setSeatOptions] = useState<any>([]);
+  const [refreshing, setRefreshing] = useState<any>(false);
+  const [isupdate,setIsUpdate] = useState<any>(false);
 
-  useEffect(() => {
-    if (params.seatNumber) {
-      const Seats: any = [params.seatNumber];
-      const splitValues = Seats[0]?.split(",");
-      setName(params.name);
-      setMobile(params.mobileNumber);
-      setBusNumber(params.busNumber);
-      setSeats(splitValues);
-    } else {
-      GetBusData(); // Fetch bus data if no parameters are provided
-    }
-  }, [params.name, params.mobileNumber, params.busNumber, params.seatNumber]);
-
-  console.log('seats==========================',seats);
-
-  const GetBusData = async () => {
+  const GetBusData = useCallback(async () => {
+    setRefreshing(true);
     try {
       const response = await axios.get("https://rssb-ticket.vercel.app/bus");
       if (response.status === 200) {
@@ -54,175 +41,174 @@ const RedBusUI = () => {
         Alert.alert("Error", "Failed to fetch bus data.");
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to Get the Bus. Please check your network and try again."
-      );
+      Alert.alert("Error", "Failed to get the bus. Please check your network and try again.");
+    } finally {
+      setRefreshing(false);
     }
-  };
+  }, []);
 
-  React.useEffect(()=>{
-    GetSeatData(busNumber);
-  },[]);
-
-  React.useEffect(()=>{
-    GetSeatData(busNumber);
-  },[busNumber]);
-  // Fetch bus details by bus number
-  const GetSeatData = async (busNumber: string) => {
+  const GetSeatData = useCallback(async (busNumber) => {
+    setRefreshing(true);
     try {
-      const response = await axios.get(
-        `https://rssb-ticket.vercel.app/bus/${busNumber}`
-      );
+      const response = await axios.get(`https://rssb-ticket.vercel.app/bus/${busNumber}`);
       if (response.status === 200) {
-        setBusDetails(response.data); // Set the fetched bus details
+        setSeatOptions(generateSeatNumbers(response?.data[0]?.totalSeat));
       } else {
-        Alert.alert("Error", "Failed to fetch bus details.");
+        Alert.alert("Error", "Failed to fetch seat data.");
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to Get bus details. Please check your network and try again."
-      );
+      Alert.alert("Error", "Failed to fetch seat data. Please check your network and try again.");
+    } finally {
+      setRefreshing(false);
     }
-  };
+  }, []);
 
-  function getTotalSeatsByBusNumber(dataArray, busNumber) {
-    const bus = dataArray.find(item => item.busNumber === busNumber);
-    return bus ?  generateSeatNumbers(bus.totalSeat) : null; 
-  }
+  useEffect(() => {
+    GetBusData();
+  }, [GetBusData]);
 
-  const generateSeatNumbers = (busDetails) => {
-    const totalSeats = busDetails; // Ensure this field exists in the response
-    if (!totalSeats) return []; // If totalSeats is not present, return an empty array
-    const seatNumbers = Array.from({ length: totalSeats }, (_, i) => (i + 1).toString());
-    setSeatOptions(seatNumbers); // Now set the seatOptions state correctly
-    console.log('Seat Number Options ==================',seatNumbers)
+  useEffect(() => {
+    const loadParams = async () => {
+      try {
+        const storedId = await AsyncStorage.getItem('Id');
+        
+        // Check if storedId is null, undefined, or empty string
+        const isStoredIdEmpty = !storedId || storedId === '';
+        
+        // Check if params have meaningful data
+        const hasValidParams = params && 
+          params._id && 
+          (params.name || params.mobileNumber || params.busNumber || params.seatNumber) &&
+          Object.keys(params).length > 0;
+
+        // Only set state if storedId is empty AND params have data
+        if (isStoredIdEmpty && hasValidParams) {
+          setIsUpdate(true);
+          const Seats:any = params?.seatNumber ? params?.seatNumber.split(",") : [];
+          setName(params?.name || "");
+          setMobile(params?.mobileNumber || "");
+          setBusNumber(params?.busNumber || "");
+          setSeats(Seats);
+          await GetSeatData(params?.busNumber?.trim());
+          await AsyncStorage.setItem('Id', params?._id);
+        }
+      } catch (error) {
+        console.error('Error handling params:', error);
+      }
+    };
+
+    loadParams();
+  }, [params, GetSeatData]);
+
+  useEffect(() => {
+    if (busNumber) {
+      GetSeatData(busNumber);
+    }
+  }, [busNumber, GetSeatData]);
+
+  const generateSeatNumbers = (totalSeats) => {
+    return Array.from({ length: totalSeats }, (_, i) => (i + 1).toString());
   };
 
   const handleSubmit = async () => {
-    if (!name || !mobile || !busNumber || seats.length <= 0) {
+    if (!name || !mobile || !busNumber || seats.length === 0) {
       Alert.alert("Error", "Please fill all required fields.");
       return;
     }
 
     const bookingData = {
-      name: name,
+      name,
       mobileNumber: mobile,
-      busNumber: busNumber,
-      seatNumber: seats.join(","), // Combine seats into a string
+      busNumber,
+      seatNumber: seats.join(","),
     };
 
     try {
-      if (params?._id) {
-        const response = await axios.put(
-          `https://rssb-ticket.vercel.app/update/${params?._id}`,
-          bookingData
-        );
-
-        if (response.status === 200) {
-          setName("");
-          setMobile("");
-          setBusNumber("");
-          setSeats([]);
-          setSeatOptions([]);
-          Alert.alert("Success", "Ticket updated successfully!");
-        } else {
-          Alert.alert(
-            "Error",
-            "Something went wrong while updating. Please try again."
-          );
-        }
+      let response;
+      if (isupdate) {
+        response = await axios.put(`https://rssb-ticket.vercel.app/update/${params?._id}`, bookingData);
       } else {
-        const response = await axios.post(
-          "https://rssb-ticket.vercel.app/book",
-          bookingData
-        );
+        response = await axios.post("https://rssb-ticket.vercel.app/book", bookingData);
+      }
 
-        if (response.status === 200) {
-          setName("");
-          setMobile("");
-          setBusNumber("");
-          setSeats([]);
-          setSeatOptions([]);
-
-          Alert.alert("Success", "Ticket booked successfully!");
-        } else {
-          Alert.alert("Error", "Something went wrong. Please try again.");
-        }
+      if (response.status === 200) {
+        Alert.alert("Success", isupdate ? "Ticket updated successfully!" : "Ticket booked successfully!");
+        resetForm();
+        GetBusData();
+        GetSeatData(busNumber);
+        setIsUpdate(false);
+        router.replace("/(tabs)/search");
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again.");
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to submit the booking. Please check your network and try again."
-      );
+      Alert.alert("Error", "Failed to submit the booking. Please check your network and try again.");
     }
   };
 
-  const fontColor = "#333";
+  const resetForm = () => {
+    setName("");
+    setMobile("");
+    setBusNumber("");
+    setSeats([]);
+    setSeatOptions([]);
+  };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container} 
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={GetBusData} />
+      }
+    >
       <View style={styles.subcontainer}>
         <View style={styles.header}>
           <Text style={styles.headerText}>RSSB Ticket Booking App</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={[styles.label, { color: fontColor }]}>Name</Text>
+          <Text style={styles.label}>Name</Text>
           <TextInput
             placeholder="Enter your name"
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholderTextColor={fontColor}
+            placeholderTextColor="#333"
           />
 
-          <Text style={[styles.label, { color: fontColor }]}>
-            Mobile Number
-          </Text>
+          <Text style={styles.label}>Mobile Number</Text>
           <TextInput
-        placeholder="Enter your mobile number"
-        style={[
-          styles.input,
-          !isValid && styles.inputError, // Apply error style when invalid
-        ]}
-        value={mobile}
-        onChangeText={(text) => {
-          const numericValue = text.replace(/[^0-9]/g, ""); // Allow only numbers
-          setMobile(numericValue);
-          setIsValid(numericValue.length === 10); // Validate length
-        }}
-        keyboardType="phone-pad"
-        placeholderTextColor="#999"
-        maxLength={10} // Prevent input longer than 10 characters
-      />
-
-          <Text style={[styles.label, { color: fontColor }]}>Bus Number</Text>
-          <CustomDropdown
-            options={busData.map((bus) => bus.busNumber)} // Map bus data for dropdown options
-            selectedValue={busNumber} // Bind to busNumber state
-            onSelect={(value) => {
-              setBusNumber(value); 
-              getTotalSeatsByBusNumber(busDetails,value)
+            placeholder="Enter your mobile number"
+            style={[styles.input, !isValid && styles.inputError]}
+            value={mobile}
+            onChangeText={(text) => {
+              const numericValue = text.replace(/[^0-9]/g, "");
+              setMobile(numericValue);
+              setIsValid(numericValue.length === 10);
             }}
+            keyboardType="phone-pad"
+            maxLength={10}
+            placeholderTextColor="#333"
+          />
+
+          <Text style={styles.label}>Bus Number</Text>
+          <CustomDropdown
+            options={busData.map((bus) => bus.busNumber)}
+            selectedValue={busNumber}
+            onSelect={setBusNumber}
             placeholder="Select Bus"
           />
 
-          <Text style={[styles.label, { color: fontColor, marginTop: "2.7%" }]}>
-            Seat Numbers
-          </Text>
+          <Text style={styles.label}>Seat Numbers</Text>
           <MultiSelectDropdown
-            options={seatOptions} // Use the updated seat options
+            options={seatOptions}
             selectedValues={seats}
-            onSelect={(values) => setSeats(values)}
+            onSelect={setSeats}
             placeholder="Select Seats"
           />
 
           <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-            <Text style={styles.submitText}>
-              {params.seatNumber ? "Update Booking" : "Submit Booking"}
-            </Text>
+            <Text style={styles.submitText}>{isupdate ? "Update Booking" : "Submit Booking"}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -230,38 +216,17 @@ const RedBusUI = () => {
   );
 };
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f7f7f7",
     paddingTop: "13%",
-    fontSize: 4,
-    height: "90%",
   },
   subcontainer: {
     flex: 1,
     backgroundColor: "#f7f7f7",
-    height: "90%",
     marginBottom: "25%",
-  },
-  selectBox: {
-    width: width * 0.8,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    paddingLeft: "3%",
-  },
-  dropdown: {
-    width: width * 0.8,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-  },
-  dropdownText: {
-    color: "#333",
-    fontSize: 16,
   },
   header: {
     backgroundColor: "rgba(138,1,2,255)",
@@ -275,9 +240,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  inputError: {
-    borderColor: "red", // Highlight the border in red for invalid input
-  },
   card: {
     marginHorizontal: "5%",
     marginTop: "5%",
@@ -286,7 +248,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     elevation: 3,
   },
-  label: { fontSize: 15, fontWeight: "500", marginBottom: 5 },
+  label: {
+    fontSize: 15,
+    fontWeight: "500",
+    marginBottom: 5,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -295,12 +261,14 @@ const styles = StyleSheet.create({
     marginBottom: "4%",
     fontSize: 15,
   },
+  inputError: {
+    borderColor: "red",
+  },
   searchButton: {
     backgroundColor: "rgba(138,1,2,255)",
     marginTop: "7%",
     padding: "4%",
     borderRadius: 5,
-    marginBottom: "2%",
     alignItems: "center",
   },
   submitText: {
