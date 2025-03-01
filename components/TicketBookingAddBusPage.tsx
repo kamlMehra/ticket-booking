@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import axios from 'axios';
-import { useGlobalSearchParams } from 'expo-router';
+import { router, useGlobalSearchParams } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
 const AddBus = ({ busData }: { busData?: any }) => {
-  const params = useGlobalSearchParams();
+  // STATES
+  const params: any = useGlobalSearchParams();
   const [date, setDate] = useState<any>(new Date());
   const [time, setTime] = useState<any>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<any>(false);
@@ -27,61 +29,54 @@ const AddBus = ({ busData }: { busData?: any }) => {
   const [to, setTo] = useState<any>('');
   const [from, setFrom] = useState<any>('');
   const [ticketType, setTicketType] = useState<any>('Sewa Bus');
-
-  // Prefill the fields when busData is provided
-  // useEffect(() => {
-  //   if (params.busNumber) {
-  //     setBusNumber(params.busNumber);
-  //     setPrice(params.ticketPrice);
-  //     setSeatNumber(params.totalSeat);
-  //     setTo(params.toLocation);
-  //     setFrom(params.fromLocation);
-  //     setTicketType(params.visitPurpose);
-  //     setDate(new Date(params.startDate as string));
-  //     setTime(new Date(params.startTime as string));
-  //   }
-  // }, [params.busNumber, params.ticketPrice, params.totalSeat, params.toLocation, params.fromLocation, params.visitPurpose, params.startDate, params.startTime]);
+  const [isUpdateMode, setIsUpdateMode] = useState(false); // Track update mode
 
   useEffect(() => {
-    if (params.busNumber) {
-      setBusNumber(params.busNumber);
-      setPrice(params.ticketPrice);
-      setSeatNumber(params.totalSeat);
-      setTo(params.toLocation);
-      setFrom(params.fromLocation);
-      setTicketType(params.visitPurpose);
-      setDate(new Date(params.startDate as string));
-  
-      // Parse params.startTime and set it to the time state
-      if (params.startTime) {
-        let StartTime:any = [params.startTime];
-        console.log({StartTime});
-        const [time, modifier] = StartTime[0]?.split(" ");
-        let [hours, minutes, seconds] = time.split(":").map(Number);
-        if (modifier === "pm" && hours < 12) hours += 12;
-        if (modifier === "am" && hours === 12) hours = 0;
-  
-        const date = new Date();
-        date.setHours(hours, minutes, seconds || 0);
-        setTime(date);
-      }
-    }
-  }, [
-    params.busNumber,
-    params.ticketPrice,
-    params.totalSeat,
-    params.toLocation,
-    params.fromLocation,
-    params.visitPurpose,
-    params.startDate,
-    params.startTime,
-  ]);
-  
-  
-  
-  
+    const loadParams = async () => {
+      try {
+        const storedBusId = await AsyncStorage.getItem('BusId');
+        const isStoredIdEmpty = !storedBusId || storedBusId === '';
+        
+        const hasValidParams = params && 
+          params.busNumber && 
+          (params.ticketPrice || params.totalSeat || params.toLocation || 
+           params.fromLocation || params.visitPurpose || params.startDate || 
+           params.startTime) &&
+          Object.keys(params).length > 0;
 
-  
+        if (isStoredIdEmpty && hasValidParams) {
+          setBusNumber(params.busNumber);
+          setPrice(params.ticketPrice || '');
+          setSeatNumber(params.totalSeat || '');
+          setTo(params.toLocation || '');
+          setFrom(params.fromLocation || '');
+          setTicketType(params.visitPurpose || 'Sewa Bus');
+          setDate(new Date(params.startDate as string));
+          
+          if (params.startTime) {
+            let StartTime: any = [params.startTime];
+            const [time, modifier] = StartTime[0]?.split(" ");
+            let [hours, minutes, seconds] = time.split(":").map(Number);
+            if (modifier === "pm" && hours < 12) hours += 12;
+            if (modifier === "am" && hours === 12) hours = 0;
+            
+            const date = new Date();
+            date.setHours(hours, minutes, seconds || 0);
+            setTime(date);
+          }
+          
+          await AsyncStorage.setItem('BusId', params?._id); // Store busNumber as ID
+          console.log(await AsyncStorage.getItem('BusId')); // Log stored ID
+          setIsUpdateMode(true); // Set to update mode
+        }
+      } catch (error) {
+        console.error('Error loading params:', error);
+      }
+    };
+
+    loadParams();
+  }, [params]); // Empty dependency array to run only once on mount
+
   const formatDate = (date: Date) => date.toLocaleDateString();
   const formatTime = (time: Date) => time.toLocaleTimeString();
 
@@ -93,6 +88,17 @@ const AddBus = ({ busData }: { busData?: any }) => {
   const handleTimeConfirm = (selectedTime: Date) => {
     setTime(selectedTime);
     setShowTimePicker(false);
+  };
+
+  const resetForm = () => {
+    setDate(new Date());
+    setTime(new Date());
+    setPrice('');
+    setBusNumber('');
+    setSeatNumber('');
+    setTo('');
+    setFrom('');
+    setTicketType('Sewa Bus');
   };
 
   const handleSubmit = async () => {
@@ -114,22 +120,25 @@ const AddBus = ({ busData }: { busData?: any }) => {
     };
 
     try {
-      if (busData) {
+      let response;
+      if (isUpdateMode && params) {
         // Update request
-        const response = await axios.put(`https://rssb-ticket.vercel.app/updatebus/${busData.id}`, bookingData);
-        if (response.status === 200) {
-          Alert.alert('Success', 'Bus updated successfully!');
-        } else {
-          Alert.alert('Error', 'Something went wrong. Please try again.');
-        }
+        response = await axios.put(`https://rssb-ticket.vercel.app/updatebus/${params._id}`, bookingData);
       } else {
         // Add request
-        const response = await axios.post('https://rssb-ticket.vercel.app/addbus', bookingData);
-        if (response.status === 200) {
-          Alert.alert('Success', 'Bus added successfully!');
-        } else {
-          Alert.alert('Error', 'Something went wrong. Please try again.');
-        }
+        response = await axios.post('https://rssb-ticket.vercel.app/addbus', bookingData);
+      }
+
+      if (response.status === 200) {
+        Alert.alert('Success', isUpdateMode && params 
+          ? 'Bus updated successfully!' 
+          : 'Bus added successfully!'
+        );
+        resetForm();
+        setIsUpdateMode(false); // Switch to add mode after submission
+        router.replace("/(tabs)/search");
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (error) {
       console.error({ error });
@@ -152,6 +161,7 @@ const AddBus = ({ busData }: { busData?: any }) => {
             value={busNumber}
             onChangeText={setBusNumber}
             placeholderTextColor="#333"
+            editable={!isUpdateMode} // Disable when isUpdateMode is true
           />
 
           <Text style={styles.label}>To</Text>
@@ -244,7 +254,9 @@ const AddBus = ({ busData }: { busData?: any }) => {
           </View>
 
           <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-            <Text style={styles.searchButtonText}>{busData ? 'Update Bus' : 'Add Bus'}</Text>
+            <Text style={styles.searchButtonText}>
+              {isUpdateMode && params ? 'Update Bus' : 'Add Bus'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -253,14 +265,13 @@ const AddBus = ({ busData }: { busData?: any }) => {
 };
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
     paddingTop: '13%',
     height: '90%',
   },
-  subcontainer:{
+  subcontainer: {
     flex: 1,
     backgroundColor: '#f7f7f7',
     height: '90%',
@@ -330,7 +341,6 @@ const styles = StyleSheet.create({
     padding: '4%',
     borderRadius: 5,
     alignItems: 'center',
-    // marginBottom: '25%',
   },
   searchButtonText: {
     color: '#fff',
@@ -338,13 +348,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   radioGroup: {
-    flexDirection: 'row', // Arrange items in a row
-    justifyContent: 'space-around', // Space items evenly
-    alignItems: 'center', // Align items vertically
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
     marginBottom: '4%',
   },
   radioContainer: {
-    flexDirection: 'row', // Arrange circle and label in a row
+    flexDirection: 'row',
     alignItems: 'center',
   },
   radioCircle: {
@@ -355,7 +365,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(138,1,2,255)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 5, // Add spacing between the circle and label
+    marginRight: 5,
   },
   radioChecked: {
     height: 10,
@@ -367,7 +377,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
   },
-  
 });
 
 export default AddBus;

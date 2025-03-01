@@ -15,21 +15,21 @@ import CustomDropdown from "./Utils/CustomSelect";
 import MultiSelectDropdown from "./Utils/MultiSelectDropdown";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// GLOBAL VARIABLE
-let issubmit = false;
+let bookedseat = [];
 
 const RedBusUI = () => {
   const params:any = useGlobalSearchParams();
   const router = useRouter();
-  const [name, setName] = useState<any>("");
-  const [mobile, setMobile] = useState<any>("");
-  const [busNumber, setBusNumber] = useState<any>("");
-  const [isValid, setIsValid] = useState<any>(true);
-  const [busData, setBusData] = useState<any>([]);
-  const [seats, setSeats] = useState<any>([]);
-  const [seatOptions, setSeatOptions] = useState<any>([]);
-  const [refreshing, setRefreshing] = useState<any>(false);
-  const [isupdate,setIsUpdate] = useState<any>(false);
+  const [name, setName] = useState("");
+  const [seatbooked, setSeatBooked] = useState([]);
+  const [mobile, setMobile] = useState("");
+  const [busNumber, setBusNumber] = useState("");
+  const [isValid, setIsValid] = useState(true);
+  const [busData, setBusData] = useState([]);
+  const [seats, setSeats] = useState([]);
+  const [seatOptions, setSeatOptions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
 
   const GetBusData = useCallback(async () => {
     setRefreshing(true);
@@ -47,15 +47,29 @@ const RedBusUI = () => {
     }
   }, []);
 
-  const GetSeatData = useCallback(async (busNumber) => {
+  const GetSeatData = useCallback(async (selectedBusNumber) => {
+    if (!selectedBusNumber) return; // Prevent call if no bus number
     setRefreshing(true);
     try {
-      const response = await axios.get(`https://rssb-ticket.vercel.app/bus/${busNumber}`);
-      if (response.status === 200) {
-        setSeatOptions(generateSeatNumbers(response?.data[0]?.totalSeat));
+      const [busResponse, ticketResponse] = await Promise.all([
+        axios.get(`https://rssb-ticket.vercel.app/bus/${selectedBusNumber}`),
+        axios.get(`https://rssb-ticket.vercel.app/ticketbybus/${selectedBusNumber}`).catch(() => ({ status: 200, data: [] })),
+      ]);
+
+      if (ticketResponse.status === 200) {
+        setSeatBooked(ticketResponse.data);
+        ticketResponse.data.map((item)=>{
+          return bookedseat.push(item.seatNumber);
+        });
+        console.log("DATA",bookedseat);
+      }
+
+      if (busResponse.status === 200) {
+        setSeatOptions(generateSeatNumbers(busResponse.data[0]?.totalSeat));
       } else {
         Alert.alert("Error", "Failed to fetch seat data.");
       }
+
     } catch (error) {
       Alert.alert("Error", "Failed to fetch seat data. Please check your network and try again.");
     } finally {
@@ -63,52 +77,68 @@ const RedBusUI = () => {
     }
   }, []);
 
+  // Load bus data only once on mount
   useEffect(() => {
     GetBusData();
   }, [GetBusData]);
 
+  // Load initial params only once
   useEffect(() => {
     const loadParams = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('Id');
-        
-        // Check if storedId is null, undefined, or empty string
-        const isStoredIdEmpty = !storedId || storedId === '';
-        
-        // Check if params have meaningful data
-        const hasValidParams = params && 
-          params._id && 
+        const storedId = await AsyncStorage.getItem("Id");
+        const isStoredIdEmpty = !storedId || storedId === "";
+        const hasValidParams =
+          params &&
+          params._id &&
           (params.name || params.mobileNumber || params.busNumber || params.seatNumber) &&
           Object.keys(params).length > 0;
 
-        // Only set state if storedId is empty AND params have data
         if (isStoredIdEmpty && hasValidParams) {
+          console.log('PARAMS',params)
           setIsUpdate(true);
-          const Seats:any = params?.seatNumber ? params?.seatNumber.split(",") : [];
+          const seatsArray = params?.seatNumber ? params.seatNumber.split(",") : [];
           setName(params?.name || "");
           setMobile(params?.mobileNumber || "");
           setBusNumber(params?.busNumber || "");
-          setSeats(Seats);
+          setSeats(seatsArray);
           await GetSeatData(params?.busNumber?.trim());
-          await AsyncStorage.setItem('Id', params?._id);
+          await AsyncStorage.setItem("Id", params?._id);
         }
       } catch (error) {
-        console.error('Error handling params:', error);
+        console.error("Error handling params:", error);
       }
     };
 
     loadParams();
-  }, [params, GetSeatData]);
+  }, [params]); // Empty dependency array to run only once on mount
 
+  // Fetch seat data only when busNumber changes
   useEffect(() => {
-    if (busNumber) {
+    if (busNumber && !isUpdate) { // Avoid redundant call during update mode
       GetSeatData(busNumber);
     }
   }, [busNumber, GetSeatData]);
 
+  // const generateSeatNumbers = (totalSeats) => {
+  //   let finalTemp = bookedseat.map(subArr => subArr[0].split(',')).flat();
+  //   return Array.from({ length: totalSeats }, (_, i) => (i + 1).toString());
+  // };
+
   const generateSeatNumbers = (totalSeats) => {
-    return Array.from({ length: totalSeats }, (_, i) => (i + 1).toString());
-  };
+    let finalTemp = bookedseat.map(subArr => subArr[0].split(',')).flat();
+    const reservedSeats = new Set(finalTemp);
+    const availableSeats = [];
+    
+    for (let i = 1; i <= totalSeats; i++) {
+        const seat = i.toString();
+        if (!reservedSeats.has(seat)) {
+            availableSeats.push(seat);
+        }
+    }
+    
+    return availableSeats;
+};
 
   const handleSubmit = async () => {
     if (!name || !mobile || !busNumber || seats.length === 0) {
@@ -125,14 +155,14 @@ const RedBusUI = () => {
 
     try {
       let response;
-      if (isupdate) {
+      if (isUpdate) {
         response = await axios.put(`https://rssb-ticket.vercel.app/update/${params?._id}`, bookingData);
       } else {
         response = await axios.post("https://rssb-ticket.vercel.app/book", bookingData);
       }
 
       if (response.status === 200) {
-        Alert.alert("Success", isupdate ? "Ticket updated successfully!" : "Ticket booked successfully!");
+        Alert.alert("Success", isUpdate ? "Ticket updated successfully!" : "Ticket booked successfully!");
         resetForm();
         GetBusData();
         GetSeatData(busNumber);
@@ -155,11 +185,9 @@ const RedBusUI = () => {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={GetBusData} />
-      }
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={GetBusData} />}
     >
       <View style={styles.subcontainer}>
         <View style={styles.header}>
@@ -208,7 +236,7 @@ const RedBusUI = () => {
           />
 
           <TouchableOpacity onPress={handleSubmit} style={styles.searchButton}>
-            <Text style={styles.submitText}>{isupdate ? "Update Booking" : "Submit Booking"}</Text>
+            <Text style={styles.submitText}>{isUpdate ? "Update Booking" : "Submit Booking"}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -216,7 +244,6 @@ const RedBusUI = () => {
   );
 };
 
-// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,

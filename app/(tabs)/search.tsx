@@ -150,16 +150,6 @@ const RedBusUI = () => {
     );
   };
 
-  const clearStorage = async () => {
-    try {
-      await AsyncStorage.clear();
-      console.log("Storage cleared!");
-    } catch (error) {
-      console.error("Error clearing storage:", error);
-    }
-  };
-  
-
   const handleEditBus = (type: any, bus: any) => {
     Alert.alert(
       "Confirm Edit",
@@ -170,7 +160,7 @@ const RedBusUI = () => {
           text: "Proceed", 
           onPress: () => {
             try {
-              clearStorage();
+              AsyncStorage.removeItem("BusId");
               router.push({
                 pathname: "/(tabs)/addBus",
                 params: {
