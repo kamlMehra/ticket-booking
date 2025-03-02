@@ -16,6 +16,7 @@ import MultiSelectDropdown from "./Utils/MultiSelectDropdown";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 let bookedseat = [];
+let seatsArray = [];
 
 const RedBusUI = () => {
   const params:any = useGlobalSearchParams();
@@ -97,7 +98,7 @@ const RedBusUI = () => {
         if (isStoredIdEmpty && hasValidParams) {
           console.log('PARAMS',params)
           setIsUpdate(true);
-          const seatsArray = params?.seatNumber ? params.seatNumber.split(",") : [];
+          seatsArray = params?.seatNumber ? params.seatNumber.split(",") : [];
           setName(params?.name || "");
           setMobile(params?.mobileNumber || "");
           setBusNumber(params?.busNumber || "");
@@ -125,20 +126,38 @@ const RedBusUI = () => {
   //   return Array.from({ length: totalSeats }, (_, i) => (i + 1).toString());
   // };
 
+//   const generateSeatNumbers = (totalSeats) => {
+//     let finalTemp = bookedseat.map(subArr => subArr[0].split(',')).flat();
+//     const reservedSeats = new Set(finalTemp);
+//     const availableSeats = [];
+    
+//     for (let i = 1; i <= totalSeats; i++) {
+//         const seat = i.toString();
+//         if (!reservedSeats.has(seat)) {
+//             availableSeats.push(seat);
+//         }
+//     }
+    
+//     return availableSeats;
+// };
   const generateSeatNumbers = (totalSeats) => {
     let finalTemp = bookedseat.map(subArr => subArr[0].split(',')).flat();
     const reservedSeats = new Set(finalTemp);
-    const availableSeats = [];
     
+    // Start with seatsArray if it exists, otherwise empty array
+    const resultSeats = seatsArray && seatsArray.length > 0 ? [...seatsArray] : [];
+    
+    // Add remaining available seats
     for (let i = 1; i <= totalSeats; i++) {
         const seat = i.toString();
-        if (!reservedSeats.has(seat)) {
-            availableSeats.push(seat);
+        // Add seat if it's not reserved and not already in resultSeats
+        if (!reservedSeats.has(seat) && !resultSeats.includes(seat)) {
+            resultSeats.push(seat);
         }
     }
     
-    return availableSeats;
-};
+    return resultSeats;
+  };
 
   const handleSubmit = async () => {
     if (!name || !mobile || !busNumber || seats.length === 0) {
